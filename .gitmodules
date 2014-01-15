@@ -1,0 +1,4 @@
+[submodule "libfixkalman"]
+	path = libfixkalman
+	url = git@github.com:sunsided/libfixkalman.git
+	branch = master
