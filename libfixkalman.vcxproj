@@ -50,6 +50,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ForcedIncludeFiles>$(ProjectDir)\msvcfix.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -83,13 +84,11 @@
     <ClCompile Include="libfixmath\uint32.c" />
     <ClCompile Include="libfixmatrix\fixarray.c" />
     <ClCompile Include="libfixmatrix\fixmatrix.c" />
-    <ClCompile Include="libfixmatrix\fixmatrix_unittests.c" />
     <ClCompile Include="libfixmatrix\fixquat.c" />
-    <ClCompile Include="libfixmatrix\fixquat_unittests.c" />
     <ClCompile Include="libfixmatrix\fixstring.c" />
     <ClCompile Include="libfixmatrix\fixvector2d.c" />
     <ClCompile Include="libfixmatrix\fixvector3d.c" />
-    <ClCompile Include="libfixmatrix\fixvector3d_unittests.c" />
+    <ClCompile Include="main.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libfixmath\fix16.h" />
@@ -104,7 +103,6 @@
     <ClInclude Include="libfixmatrix\fixstring.h" />
     <ClInclude Include="libfixmatrix\fixvector2d.h" />
     <ClInclude Include="libfixmatrix\fixvector3d.h" />
-    <ClInclude Include="libfixmatrix\unittests.h" />
     <ClInclude Include="msvcfix.h" />
   </ItemGroup>
   <ItemGroup>

@@ -44,13 +44,7 @@
     <ClCompile Include="libfixmatrix\fixmatrix.c">
       <Filter>libfixmatrix</Filter>
     </ClCompile>
-    <ClCompile Include="libfixmatrix\fixmatrix_unittests.c">
-      <Filter>libfixmatrix</Filter>
-    </ClCompile>
     <ClCompile Include="libfixmatrix\fixquat.c">
-      <Filter>libfixmatrix</Filter>
-    </ClCompile>
-    <ClCompile Include="libfixmatrix\fixquat_unittests.c">
       <Filter>libfixmatrix</Filter>
     </ClCompile>
     <ClCompile Include="libfixmatrix\fixstring.c">
@@ -62,9 +56,7 @@
     <ClCompile Include="libfixmatrix\fixvector3d.c">
       <Filter>libfixmatrix</Filter>
     </ClCompile>
-    <ClCompile Include="libfixmatrix\fixvector3d_unittests.c">
-      <Filter>libfixmatrix</Filter>
-    </ClCompile>
+    <ClCompile Include="main.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libfixmath\fix16.h">
@@ -101,9 +93,6 @@
       <Filter>libfixmatrix</Filter>
     </ClInclude>
     <ClInclude Include="libfixmatrix\fixvector3d.h">
-      <Filter>libfixmatrix</Filter>
-    </ClInclude>
-    <ClInclude Include="libfixmatrix\unittests.h">
       <Filter>libfixmatrix</Filter>
     </ClInclude>
     <ClInclude Include="msvcfix.h" />
