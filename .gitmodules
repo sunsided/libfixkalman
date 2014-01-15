@@ -2,3 +2,11 @@
 	path = libfixkalman
 	url = git@github.com:sunsided/libfixkalman.git
 	branch = master
+[submodule "libfixmatrix"]
+	path = libfixmatrix
+	url = git@github.com:PetteriAimonen/libfixmatrix.git
+	branch = master
+[submodule "libfixmath"]
+	path = libfixmath
+	url = git@github.com:sunsided/libfixmath.git
+	branch = master
