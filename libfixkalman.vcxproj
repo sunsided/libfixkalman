@@ -38,12 +38,18 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir)\libfixmath;$(ProjectDir)\libfixmatrix;$(ProjectDir)\libfixkalman;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir)\libfixmath;$(ProjectDir)\libfixmatrix;$(ProjectDir)\libfixkalman;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <ForcedIncludeFiles>$(ProjectDir)\msvcfix.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -98,6 +104,7 @@
     <ClInclude Include="libfixmatrix\fixvector2d.h" />
     <ClInclude Include="libfixmatrix\fixvector3d.h" />
     <ClInclude Include="libfixmatrix\unittests.h" />
+    <ClInclude Include="msvcfix.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="libfixmath\LICENSE" />

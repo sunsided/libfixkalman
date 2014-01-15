@@ -106,6 +106,7 @@
     <ClInclude Include="libfixmatrix\unittests.h">
       <Filter>libfixmatrix</Filter>
     </ClInclude>
+    <ClInclude Include="msvcfix.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="libfixmath\LICENSE">
