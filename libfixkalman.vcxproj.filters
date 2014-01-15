@@ -1,17 +1,121 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="libfixmath">
+      <UniqueIdentifier>{33747ea8-5057-4442-81f7-1de013e13f4b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    <Filter Include="libfixmatrix">
+      <UniqueIdentifier>{8cf316ec-beb4-4c7b-9384-7af85dc1b926}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="libfixkalman">
+      <UniqueIdentifier>{f168e8f4-421a-4ffa-b872-07321b848a97}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="libfixmath\code_style.txt">
+      <Filter>libfixmath</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="libfixmath\fix16.c">
+      <Filter>libfixmath</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmath\fix16_exp.c">
+      <Filter>libfixmath</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmath\fix16_sqrt.c">
+      <Filter>libfixmath</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmath\fix16_str.c">
+      <Filter>libfixmath</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmath\fix16_trig.c">
+      <Filter>libfixmath</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmath\fract32.c">
+      <Filter>libfixmath</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmath\uint32.c">
+      <Filter>libfixmath</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixarray.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixmatrix.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixmatrix_unittests.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixquat.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixquat_unittests.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixstring.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixvector2d.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixvector3d.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixmatrix\fixvector3d_unittests.c">
+      <Filter>libfixmatrix</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="libfixmath\fix16.h">
+      <Filter>libfixmath</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmath\fix16_trig_sin_lut.h">
+      <Filter>libfixmath</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmath\fixmath.h">
+      <Filter>libfixmath</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmath\fract32.h">
+      <Filter>libfixmath</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmath\int64.h">
+      <Filter>libfixmath</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmath\uint32.h">
+      <Filter>libfixmath</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmatrix\fixarray.h">
+      <Filter>libfixmatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmatrix\fixmatrix.h">
+      <Filter>libfixmatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmatrix\fixquat.h">
+      <Filter>libfixmatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmatrix\fixstring.h">
+      <Filter>libfixmatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmatrix\fixvector2d.h">
+      <Filter>libfixmatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmatrix\fixvector3d.h">
+      <Filter>libfixmatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixmatrix\unittests.h">
+      <Filter>libfixmatrix</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="libfixmath\LICENSE">
+      <Filter>libfixmath</Filter>
+    </None>
+    <None Include="libfixmatrix\FUNCTIONS.rst">
+      <Filter>libfixmatrix</Filter>
+    </None>
+    <None Include="libfixmatrix\LICENSE">
+      <Filter>libfixmatrix</Filter>
+    </None>
   </ItemGroup>
 </Project>
