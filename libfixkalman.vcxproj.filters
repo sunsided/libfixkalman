@@ -57,6 +57,12 @@
       <Filter>libfixmatrix</Filter>
     </ClCompile>
     <ClCompile Include="main.c" />
+    <ClCompile Include="libfixkalman\kalman.c">
+      <Filter>libfixkalman</Filter>
+    </ClCompile>
+    <ClCompile Include="libfixkalman\fixmatrixadditions.c">
+      <Filter>libfixkalman</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libfixmath\fix16.h">
@@ -96,6 +102,15 @@
       <Filter>libfixmatrix</Filter>
     </ClInclude>
     <ClInclude Include="msvcfix.h" />
+    <ClInclude Include="libfixkalman\kalman.h">
+      <Filter>libfixkalman</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixkalman\compiler.h">
+      <Filter>libfixkalman</Filter>
+    </ClInclude>
+    <ClInclude Include="libfixkalman\fixmatrixadditions.h">
+      <Filter>libfixkalman</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="libfixmath\LICENSE">
