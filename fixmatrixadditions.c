@@ -17,7 +17,7 @@ void mf16_invert_lt(mf16 *dest, const mf16 *matrix)
 
     // If dest and input matrices alias, we have to use a temp matrix.
     mf16 tmp;
-    fa16_unalias(dest, (void**)&dest, (void**)&matrix, &tmp, sizeof(tmp));
+    fa16_unalias(dest, (void**)&matrix, (void**)&matrix, &tmp, sizeof(tmp));
 
     dest->errors = dest->errors | matrix->errors;
 
