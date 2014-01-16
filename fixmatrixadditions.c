@@ -60,9 +60,3 @@ void mf16_mul_abat(mf16 *dest, const mf16 *a, const mf16 *b)
     mf16_mul(dest, a, b);
     mf16_mul_bt(dest, dest, a);
 }
-
-void mf16_mul_abct(mf16 *dest, const mf16 *a, const mf16 *b, const mf16 *c)
-{
-    mf16_mul(dest, a, b);
-    mf16_mul_bt(dest, dest, c);
-}

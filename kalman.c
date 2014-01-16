@@ -174,7 +174,6 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
     
     mf16 temp_HP = { H->rows, H->columns };
     mf16 temp_PHt = { P->rows, H->columns };
-    mf16 temp_KHP = { P->rows, P->columns };
 
     /************************************************************************/
     /* Calculate innovation and residual covariance                         */
@@ -218,6 +217,6 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
 
     // P = P - K*(H*P)
     mf16_mul(&temp_HP, H, P);            // temp_HP = H*P
-    mf16_mul(&temp_KHP, K, &temp_HP);     // temp_KHP = K*temp_HP
-    mf16_sub(P, &temp_KHP, P);           // P -= temp_KHP 
+    mf16_mul(K, K, &temp_HP);     // temp_KHP = K*temp_HP
+    mf16_sub(P, P, K);           // P -= temp_KHP 
 }
