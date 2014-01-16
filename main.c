@@ -1,6 +1,4 @@
 #include <assert.h>
-
-#define FIXMATRIX_MAX_SIZE 3
 #include "fixmatrix.h"
 
 #include "fixmatrixadditions.h"
@@ -31,10 +29,10 @@ void test_matrix_inverse()
     mf16_cholesky(&m, &d);
 
     // invert matrix using lower triangular
-    mf16_invert_lt(&di, &m);
+    mf16_invert_lt(&m, &m);
 
     // test the result
-    fix16_t test = di.data[1][1];
+    fix16_t test = m.data[1][1];
     float testf = fix16_to_float(test);
     assert(testf >= 1.3);
 }
