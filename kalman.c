@@ -92,6 +92,7 @@ void kalman_predict_Q(register kalman_t *const kf)
     const mf16 *RESTRICT const A = &kf->A;
     const mf16 *RESTRICT const B = &kf->B;
     mf16 *RESTRICT const P = &kf->P;
+    mf16 *RESTRICT const Q = &kf->Q;
 
     mf16 P_temp = { P->rows, P->columns };
     mf16 BQ_temp = { A->rows, B->columns };
@@ -102,8 +103,7 @@ void kalman_predict_Q(register kalman_t *const kf)
     /************************************************************************/
 
     // P = A*P*A'
-    mf16_mul(&P_temp, A, P);                 // temp = A*P
-    mf16_mul_bt(P, &P_temp, A);              // P = temp*A'
+    mf16_mul_abat(P, A, P);                 // P = A*P*A'
 
     // TODO: this should work without P_temp
     // TODO: extract the code block below
@@ -111,9 +111,8 @@ void kalman_predict_Q(register kalman_t *const kf)
     // P = P + B*Q*B'
     if (B->rows > 0)
     {
-        mf16_mul(&BQ_temp, B, &kf->Q);       // temp = B*Q
-        mf16_mul_bt(&BQ_temp, B, &P_temp);   // P_temp = temp*B'
-        mf16_add(P, P, &P_temp);             // P += P_temp
+        mf16_mul_abat(&BQ_temp, B, Q);       // temp = B*Q*B'
+        mf16_add(P, P, &BQ_temp);             // P += P_temp
 
         // TODO: Implement matrix-matrix multiply-and-add
         // TODO: Implement matrix-matrix add-in-place
@@ -143,8 +142,7 @@ void kalman_predict_Q_tuned(register kalman_t *const kf, fix16_t lambda)
     lambda = fix16_div(fix16_one, fix16_sq(lambda)); // TODO: This should be precalculated, e.g. using kalman_set_lambda(...);
 
     // P = A*P*A'
-    mf16_mul(P, A, P);                         // temp = A*P
-    mf16_mul_bt(P, P, A);                      // P = temp*A'
+    mf16_mul_abat(P, A, P);                         // temp = A*P*A'
     mf16_mul_s(P, P, lambda);                  // P *= 1/(lambda^2)
 
     // TODO: an a-b-ct multiplication might come in handy
@@ -153,9 +151,8 @@ void kalman_predict_Q_tuned(register kalman_t *const kf, fix16_t lambda)
     // P = P + B*Q*B'
     if (B->rows > 0)
     {
-        mf16_mul(&BQ_temp, B, &kf->Q);         // temp = B*Q
-        mf16_mul(&P_temp, &BQ_temp, B);        // P_temp = temp*B'
-        mf16_add(P, &P_temp, P);               // P += P_temp
+        mf16_mul_abat(&BQ_temp, B, &kf->Q);         // temp = B*Q*B'
+        mf16_add(P, &BQ_temp, P);               // P += temp
 
         // TODO: Implement matrix-matrix multiply-and-add
         // TODO: Implement matrix-matrix add-in-place
@@ -176,7 +173,6 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
     mf16 *RESTRICT const x = &kf->x;
     
     mf16 temp_HP = { H->rows, H->columns };
-    mf16 Sinv = { S->rows, S->columns };
     mf16 temp_PHt = { P->rows, H->columns };
     mf16 temp_KHP = { P->rows, P->columns };
 
@@ -191,8 +187,7 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
     mf16_sub(y, &kfm->z, y);
 
     // S = H*P*H' + R
-    mf16_mul(&temp_HP, H, P);               // temp = H*P
-    mf16_mul_bt(S, &temp_HP, H);            // S = temp*H'
+    mf16_mul_abat(S, H, P);               // temp = H*P*H'
     mf16_add(S, &kfm->R, S);                // S += R 
 
     /************************************************************************/
@@ -202,9 +197,9 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
 
     // K = P*H' * S^-1
     mf16_cholesky(S, S);
-    mf16_invert_lt(&Sinv, S);               // Sinv = S^-1
+    mf16_invert_lt(S, S);               // Sinv = S^-1
     mf16_mul_bt(&temp_PHt, P, H);           // temp = P*H'
-    mf16_mul(K, &temp_PHt, &Sinv);          // K = temp*Sinv
+    mf16_mul(K, &temp_PHt, S);          // K = temp*Sinv
 
     /************************************************************************/
     /* Correct state prediction                                             */
