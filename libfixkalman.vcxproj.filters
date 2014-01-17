@@ -60,7 +60,7 @@
     <ClCompile Include="libfixkalman\kalman.c">
       <Filter>libfixkalman</Filter>
     </ClCompile>
-    <ClCompile Include="libfixkalman\fixmatrixadditions.c">
+    <ClCompile Include="libfixkalman\example_gravity.c">
       <Filter>libfixkalman</Filter>
     </ClCompile>
   </ItemGroup>
@@ -106,9 +106,6 @@
       <Filter>libfixkalman</Filter>
     </ClInclude>
     <ClInclude Include="libfixkalman\compiler.h">
-      <Filter>libfixkalman</Filter>
-    </ClInclude>
-    <ClInclude Include="libfixkalman\fixmatrixadditions.h">
       <Filter>libfixkalman</Filter>
     </ClInclude>
   </ItemGroup>

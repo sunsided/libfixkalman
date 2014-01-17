@@ -78,7 +78,7 @@
     <Text Include="libfixmath\code_style.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="libfixkalman\fixmatrixadditions.c" />
+    <ClCompile Include="libfixkalman\example_gravity.c" />
     <ClCompile Include="libfixkalman\kalman.c" />
     <ClCompile Include="libfixmath\fix16.c" />
     <ClCompile Include="libfixmath\fix16_exp.c" />
@@ -97,7 +97,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libfixkalman\compiler.h" />
-    <ClInclude Include="libfixkalman\fixmatrixadditions.h" />
     <ClInclude Include="libfixkalman\kalman.h" />
     <ClInclude Include="libfixmath\fix16.h" />
     <ClInclude Include="libfixmath\fix16_trig_sin_lut.h" />
