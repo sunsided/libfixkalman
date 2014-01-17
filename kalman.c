@@ -1,10 +1,18 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "fixmatrixadditions.h"
-
 #define EXTERN_INLINE_KALMAN INLINE
 #include "kalman.h"
+
+/*!
+* \brief Calculates A*B*A'
+*/
+LEAF NONNULL 
+STATIC_INLINE void mf16_mul_abat(mf16 *dest, const mf16 *a, const mf16 *b)
+{
+    mf16_mul(dest, a, b);
+    mf16_mul_bt(dest, dest, a);
+}
 
 /*!
 * \brief Initializes the Kalman Filter
