@@ -7,11 +7,11 @@
 #include "kalman.h"
 
 typedef enum {
-    SUB = 0,
-    ADD = 1,
+    ADD = 0,
+    SUB = 1,
 } addsub_t;
 
-// Calculates dest = dest + A * B
+// Calculates dest = dest +/- A * B
 void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, addsub_t mode)
 {
     int row, column;
