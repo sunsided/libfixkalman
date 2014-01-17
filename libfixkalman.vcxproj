@@ -113,6 +113,7 @@
     <ClInclude Include="msvcfix.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="libfixkalman\FUNCTIONS.rst" />
     <None Include="libfixmath\LICENSE" />
     <None Include="libfixmatrix\FUNCTIONS.rst" />
     <None Include="libfixmatrix\LICENSE" />
