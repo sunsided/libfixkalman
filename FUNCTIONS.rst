@@ -386,7 +386,7 @@ Retrieves a pointer to the system process noise matrix *Q*::
 :kf:        The filter.
 
 Helper Functions (observations)
-==================================
+===============================
 
 kalman_get_observation_vector
 -----------------------------
@@ -397,7 +397,7 @@ Retrieves a pointer to the observation vector *z*::
 :kfm:        The measurement.
 
 kalman_get_observation_process_noise
-------------------------
+------------------------------------
 Retrieves a pointer to the process noise matrix *R*::
 
     mf16* kalman_get_observation_process_noise(kalman16_observation_t *kfm)
