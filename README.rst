@@ -11,9 +11,10 @@ The main focus is processors without an FPU, such as ARM Cortex-M0 or M3.
 Matrix inversion in the correction step is implemented using Cholesky decomposition and an optimized
 inversion algorithm ported from EJML_.
 
-See `funtion reference`_ for further details.
+See `function reference`_ for further details and `example_gravity.c`_ for example code.
 
 .. _libfixmath: http://code.google.com/p/libfixmath/
 .. _libfixmatrix: https://github.com/PetteriAimonen/libfixmatrix
 .. _EJML: https://code.google.com/p/efficient-java-matrix-library/
 .. _function reference: https://github.com/sunsided/libfixkalman/blob/master/FUNCTIONS.rst
+.. _`example_gravity.c`: https://github.com/sunsided/libfixkalman/blob/master/example_gravity.c
