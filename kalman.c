@@ -14,6 +14,8 @@ STATIC_INLINE void mf16_mul_abat(mf16 *dest, const mf16 *a, const mf16 *b)
     mf16_mul_bt(dest, dest, a);
 }
 
+#ifndef KALMAN_DISABLE_C
+
 /*!
 * \brief Initializes the Kalman Filter
 * \param[in] kf The Kalman Filter structure to initialize
@@ -25,28 +27,67 @@ void kalman_filter_initialize(kalman16_t *const kf, uint_fast8_t num_states, uin
     kf->A.rows = num_states;
     kf->A.columns = num_states;
     kf->A.errors = 0;
+    mf16_fill(&kf->A, 0);
     
     kf->P.rows = num_states;
     kf->P.columns = num_states;
     kf->P.errors = 0;
+    mf16_fill(&kf->P, 0);
 
     kf->B.rows = num_inputs;
     kf->B.columns = num_inputs;
     kf->B.errors = 0;
+    mf16_fill(&kf->B, 0);
 
     kf->Q.rows = num_inputs;
     kf->Q.columns = num_inputs;
     kf->Q.errors = 0;
+    mf16_fill(&kf->Q, 0);
 
     kf->x.rows = num_states;
     kf->x.columns = 1;
     kf->x.errors = 0;
+    mf16_fill(&kf->x, 0);
 
     kf->u.rows = num_inputs;
     kf->u.columns = 1;
     kf->u.errors = 0;
+    mf16_fill(&kf->u, 0);
 }
 
+#endif
+
+#ifndef KALMAN_DISABLE_UC
+
+/*!
+* \brief Initializes the Kalman Filter
+* \param[in] kf The Kalman Filter structure to initialize
+* \param[in] num_states The number of state variables
+*/
+void kalman_filter_initialize_uc(kalman16_uc_t *const kf, uint_fast8_t num_states)
+{
+    kf->A.rows = num_states;
+    kf->A.columns = num_states;
+    kf->A.errors = 0;
+    mf16_fill(&kf->A, 0);
+
+    kf->P.rows = num_states;
+    kf->P.columns = num_states;
+    kf->P.errors = 0;
+    mf16_fill(&kf->P, 0);
+
+    kf->x.rows = num_states;
+    kf->x.columns = 1;
+    kf->x.errors = 0;
+    mf16_fill(&kf->x, 0);
+
+    kf->Q.rows = num_states;
+    kf->Q.columns = 1;
+    kf->Q.errors = 0;
+    mf16_fill(&kf->Q, 0);
+}
+
+#endif // KALMAN_DISABLE_UC
 
 /*!
 * \brief Sets the measurement vector
@@ -59,16 +100,20 @@ void kalman_observation_initialize(kalman16_observation_t *const kfm, uint_fast8
     kfm->H.rows = num_observations;
     kfm->H.columns = num_states;
     kfm->H.errors = 0;
+    mf16_fill(&kfm->H, 0);
 
     kfm->R.rows = num_observations;
     kfm->R.columns = num_observations;
     kfm->R.errors = 0;
+    mf16_fill(&kfm->R, 0);
 
     kfm->z.rows = num_observations;
     kfm->z.columns = 1;
     kfm->z.errors = 0;
-
+    mf16_fill(&kfm->z, 0);
 }
+
+#ifndef KALMAN_DISABLE_C
 
 /*!
 * \brief Performs the time update / prediction step of only the state vector
@@ -104,11 +149,38 @@ void kalman_predict_x(register kalman16_t *const kf)
     }
 }
 
+#endif
+
+#ifndef KALMAN_DISABLE_UC
+
+/*!
+* \brief Performs the time update / prediction step of only the state vector
+* \param[in] kf The Kalman Filter structure to predict with.
+*/
+void kalman_predict_x_uc(register kalman16_uc_t *const kf)
+{
+    // matrices and vectors
+    const mf16 *RESTRICT const A = &kf->A;
+    mf16 *RESTRICT const x = &kf->x;
+    
+    /************************************************************************/
+    /* Predict next state using system dynamics                             */
+    /* x = A*x                                                              */
+    /************************************************************************/
+
+    // x = A*x
+    mf16_mul(x, A, x);
+}
+
+#endif // KALMAN_DISABLE_UC
+
+#ifndef KALMAN_DISABLE_C
+
 /*!
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 */
-void kalman_predict_Q(register kalman16_t *const kf)
+void kalman_predict_P(register kalman16_t *const kf)
 {
     // matrices and vectors
     const mf16 *RESTRICT const A = &kf->A;
@@ -125,7 +197,7 @@ void kalman_predict_Q(register kalman16_t *const kf)
     /************************************************************************/
 
     // P = A*P*A'
-    mf16_mul_abat(P, A, P);                 // P = A*P*A'
+    mf16_mul_abat(P, A, P);                     // P = A*P*A'
 
     // TODO: this should work without P_temp
     // TODO: extract the code block below
@@ -133,19 +205,49 @@ void kalman_predict_Q(register kalman16_t *const kf)
     // P = P + B*Q*B'
     if (B->rows > 0)
     {
-        mf16_mul_abat(&BQ_temp, B, Q);       // temp = B*Q*B'
-        mf16_add(P, P, &BQ_temp);             // P += P_temp
+        mf16_mul_abat(&BQ_temp, B, Q);          // temp = B*Q*B'
+        mf16_add(P, P, &BQ_temp);               // P += P_temp
 
         // TODO: Implement matrix-matrix multiply-and-add
         // TODO: Implement matrix-matrix add-in-place
     }
 }
 
+#endif
+
+#ifndef KALMAN_DISABLE_UC
+
 /*!
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 */
-void kalman_predict_Q_tuned(register kalman16_t *const kf, fix16_t lambda)
+void kalman_predict_P_uc(register kalman16_uc_t *const kf)
+{
+    // matrices and vectors
+    const mf16 *RESTRICT const A = &kf->A;
+    const mf16 *RESTRICT const Q = &kf->Q;
+    mf16 *RESTRICT const P = &kf->P;
+
+    /************************************************************************/
+    /* Predict next covariance using system dynamics and input              */
+    /* P = A*P*A' + B*Q*B'                                                  */
+    /************************************************************************/
+
+    // P = A*P*A'
+    mf16_mul_abat(P, A, P);                 // P = A*P*A'
+    mf16_add(P, P, Q);                      // P += Q
+}
+
+#endif // KALMAN_DISABLE_UC
+
+#ifndef KALMAN_DISABLE_C
+#ifndef KALMAN_DISABLE_LAMBDA
+
+/*!
+* \brief Performs the time update / prediction step of only the state covariance matrix
+* \param[in] kf The Kalman Filter structure to predict with.
+*/
+void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda)
 {
     // matrices and vectors
     const mf16 *RESTRICT const A = &kf->A;
@@ -164,22 +266,57 @@ void kalman_predict_Q_tuned(register kalman16_t *const kf, fix16_t lambda)
     lambda = fix16_div(fix16_one, fix16_sq(lambda)); // TODO: This should be precalculated, e.g. using kalman_set_lambda(...);
 
     // P = A*P*A'
-    mf16_mul_abat(P, A, P);                         // temp = A*P*A'
-    mf16_mul_s(P, P, lambda);                  // P *= 1/(lambda^2)
+    mf16_mul_abat(P, A, P);                     // temp = A*P*A'
+    mf16_mul_s(P, P, lambda);                   // P *= 1/(lambda^2)
 
-    // TODO: an a-b-ct multiplication might come in handy
     // TODO: extract the code block below
 
     // P = P + B*Q*B'
     if (B->rows > 0)
     {
-        mf16_mul_abat(&BQ_temp, B, &kf->Q);         // temp = B*Q*B'
+        mf16_mul_abat(&BQ_temp, B, &kf->Q);     // temp = B*Q*B'
         mf16_add(P, &BQ_temp, P);               // P += temp
 
         // TODO: Implement matrix-matrix multiply-and-add
         // TODO: Implement matrix-matrix add-in-place
     }
 }
+
+#endif // KALMAN_DISABLE_LAMBDA
+#endif
+
+#ifndef KALMAN_DISABLE_UC
+#ifndef KALMAN_DISABLE_LAMBDA
+
+/*!
+* \brief Performs the time update / prediction step of only the state covariance matrix
+* \param[in] kf The Kalman Filter structure to predict with.
+*/
+void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda)
+{
+    // matrices and vectors
+    const mf16 *RESTRICT const A = &kf->A;
+    const mf16 *RESTRICT const Q = &kf->Q;
+    mf16 *RESTRICT const P = &kf->P;
+
+    /************************************************************************/
+    /* Predict next covariance using system dynamics and input              */
+    /* P = A*P*A' * 1/lambda^2 + B*Q*B'                                     */
+    /************************************************************************/
+
+    // lambda = 1/lambda^2
+    lambda = fix16_div(fix16_one, fix16_sq(lambda)); // TODO: This should be precalculated, e.g. using kalman_set_lambda(...);
+
+    // P = A*P*A'
+    mf16_mul_abat(P, A, P);                 // temp = A*P*A'
+    mf16_mul_s(P, P, lambda);               // P *= 1/(lambda^2)
+    mf16_add(P, P, Q);                      // P += Q
+}
+
+#endif // KALMAN_DISABLE_LAMBDA
+#endif // KALMAN_DISABLE_UC
+
+#if !defined(KALMAN_DISABLE_C) || !defined(KALMAN_DISABLE_UC)
 
 /*!
 * \brief Performs the measurement update step.
@@ -240,3 +377,19 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     mf16_mul(&K, &K, &temp_HP);     // temp_KHP = K*temp_HP
     mf16_sub(P, P, &K);           // P -= temp_KHP 
 }
+
+#endif
+
+#ifndef KALMAN_DISABLE_UC
+
+/*!
+* \brief Performs the measurement update step.
+* \param[in] kf The Kalman Filter structure to correct.
+*/
+void kalman_correct_uc(kalman16_uc_t *kf, kalman16_observation_t *kfm)
+{
+    // just be careful, kid
+    kalman_correct((kalman16_t*)kf, kfm);
+}
+
+#endif // KALMAN_DISABLE_UC

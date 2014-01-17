@@ -18,11 +18,24 @@
 
 #include "kalman.h"
 
+/**
+* \brief Enables usage of the functions specialized for systems without control inputs
+*
+* Define to 0 in order to use the regular functions
+*/
+#define USE_UNCONTROLLED 1
+
 // create the filter structure
 #define KALMAN_NAME gravity
 #define KALMAN_NUM_STATES 3
 #define KALMAN_NUM_INPUTS 0
+
+#if USE_UNCONTROLLED
+kalman16_uc_t kf;
+#else
 kalman16_t kf;
+#endif
+
 
 // create the measurement structure
 #define KALMAN_MEASUREMENT_NAME position
@@ -52,13 +65,21 @@ static void kalman_gravity_init()
     /************************************************************************/
     /* initialize the filter structures                                     */
     /************************************************************************/
+#if USE_UNCONTROLLED
+    kalman_filter_initialize_uc(&kf, KALMAN_NUM_STATES);
+#else
     kalman_filter_initialize(&kf, KALMAN_NUM_STATES, KALMAN_NUM_INPUTS);
+#endif
     kalman_observation_initialize(&kfm, KALMAN_NUM_STATES, KALMAN_NUM_MEASUREMENTS);
 
     /************************************************************************/
     /* set initial state                                                    */
     /************************************************************************/
+#if USE_UNCONTROLLED
+    mf16 *x = kalman_get_state_vector_uc(&kf);
+#else
     mf16 *x = kalman_get_state_vector(&kf);
+#endif
     x->data[0][0] = 0; // s_i
     x->data[1][0] = 0; // v_i
     x->data[2][0] = fix16_from_float(6); // g_i
@@ -66,7 +87,11 @@ static void kalman_gravity_init()
     /************************************************************************/
     /* set state transition                                                 */
     /************************************************************************/
+#if USE_UNCONTROLLED
+    mf16 *A = kalman_get_state_transition_uc(&kf);
+#else
     mf16 *A = kalman_get_state_transition(&kf);
+#endif
     
     // set time constant
     const fix16_t T = fix16_one;
@@ -93,7 +118,11 @@ static void kalman_gravity_init()
     /************************************************************************/
     /* set covariance                                                       */
     /************************************************************************/
+#if USE_UNCONTROLLED
+    mf16 *P = kalman_get_system_covariance_uc(&kf);
+#else
     mf16 *P = kalman_get_system_covariance(&kf);
+#endif
 
     matrix_set_symmetric(P, 0, 0, fix16_half);   // var(s)
     matrix_set_symmetric(P, 0, 1, 0);   // cov(s,v)
@@ -103,6 +132,14 @@ static void kalman_gravity_init()
     matrix_set_symmetric(P, 1, 2, 0);   // cov(v,g)
 
     matrix_set_symmetric(P, 2, 2, fix16_one);   // var(g)
+
+    /************************************************************************/
+    /* set system process noise                                             */
+    /************************************************************************/
+#if USE_UNCONTROLLED
+    mf16 *Q = kalman_get_system_process_noise_uc(&kf);
+    mf16_fill(Q, F16(0.0001));
+#endif
 
     /************************************************************************/
     /* set measurement transformation                                       */
@@ -116,7 +153,7 @@ static void kalman_gravity_init()
     /************************************************************************/
     /* set process noise                                                    */
     /************************************************************************/
-    mf16 *R = kalman_get_process_noise(&kfm);
+    mf16 *R = kalman_get_observation_process_noise(&kfm);
 
     matrix_set(R, 0, 0, fix16_half);     // var(s)
 }
@@ -170,6 +207,36 @@ static fix16_t measurement_error[MEAS_COUNT] = {
 /*!
 * \brief Runs the gravity Kalman filter.
 */
+#if USE_UNCONTROLLED
+void kalman_gravity_demo()
+{
+    // initialize the filter
+    kalman_gravity_init();
+
+    mf16 *x = kalman_get_state_vector_uc(&kf);
+    mf16 *z = kalman_get_observation_vector(&kfm);
+    
+    // filter!
+    uint_fast16_t i;
+    for (i = 0; i < MEAS_COUNT; ++i)
+    {
+        // prediction.
+        kalman_predict_uc(&kf);
+
+        // measure ...
+        fix16_t measurement = fix16_add(real_distance[i], measurement_error[i]);
+        matrix_set(z, 0, 0, measurement);
+
+        // update
+        kalman_correct_uc(&kf, &kfm);
+    }
+
+    // fetch estimated g
+    const fix16_t g_estimated = x->data[2][0];
+    const float value = fix16_to_float(g_estimated);
+    assert(value > 9.7 && value < 10);
+}
+#else
 void kalman_gravity_demo()
 {
     // initialize the filter
@@ -177,7 +244,7 @@ void kalman_gravity_demo()
 
     mf16 *x = kalman_get_state_vector(&kf);
     mf16 *z = kalman_get_observation_vector(&kfm);
-    
+
     // filter!
     uint_fast16_t i;
     for (i = 0; i < MEAS_COUNT; ++i)
@@ -198,11 +265,45 @@ void kalman_gravity_demo()
     const float value = fix16_to_float(g_estimated);
     assert(value > 9.7 && value < 10);
 }
+#endif
 
 
 /*!
 * \brief Runs the gravity Kalman filter with lambda tuning.
 */
+#if USE_UNCONTROLLED
+void kalman_gravity_demo_lambda()
+{
+    // initialize the filter
+    kalman_gravity_init();
+
+    mf16 *x = kalman_get_state_vector_uc(&kf);
+    mf16 *z = kalman_get_observation_vector(&kfm);
+
+    // forcibly increase uncertainty in every prediction step by ~20% (1/lambda^2)
+    const fix16_t lambda = F16(0.9);
+
+    // filter!
+    uint_fast16_t i;
+    for (i = 0; i < MEAS_COUNT; ++i)
+    {
+        // prediction.
+        kalman_predict_tuned_uc(&kf, lambda);
+
+        // measure ...
+        fix16_t measurement = fix16_add(real_distance[i], measurement_error[i]);
+        matrix_set(z, 0, 0, measurement);
+
+        // update
+        kalman_correct_uc(&kf, &kfm);
+    }
+
+    // fetch estimated g
+    const fix16_t g_estimated = x->data[2][0];
+    const float value = fix16_to_float(g_estimated);
+    assert(value > 9.7 && value < 10);
+}
+#else
 void kalman_gravity_demo_lambda()
 {
     // initialize the filter
@@ -234,6 +335,7 @@ void kalman_gravity_demo_lambda()
     const float value = fix16_to_float(g_estimated);
     assert(value > 9.7 && value < 10);
 }
+#endif
 
 
 void main()
