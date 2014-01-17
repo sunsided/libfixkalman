@@ -22,12 +22,12 @@
 #define KALMAN_NAME gravity
 #define KALMAN_NUM_STATES 3
 #define KALMAN_NUM_INPUTS 0
-kalman_t kf;
+kalman16_t kf;
 
 // create the measurement structure
 #define KALMAN_MEASUREMENT_NAME position
 #define KALMAN_NUM_MEASUREMENTS 1
-kalman_measurement_t kfm;
+kalman16_observation_t kfm;
 
 #define matrix_set(matrix, row, column, value) \
     matrix->data[row][column] = value
@@ -53,7 +53,7 @@ static void kalman_gravity_init()
     /* initialize the filter structures                                     */
     /************************************************************************/
     kalman_filter_initialize(&kf, KALMAN_NUM_STATES, KALMAN_NUM_INPUTS);
-    kalman_measurement_initialize(&kfm, KALMAN_NUM_STATES, KALMAN_NUM_MEASUREMENTS);
+    kalman_observation_initialize(&kfm, KALMAN_NUM_STATES, KALMAN_NUM_MEASUREMENTS);
 
     /************************************************************************/
     /* set initial state                                                    */
@@ -107,7 +107,7 @@ static void kalman_gravity_init()
     /************************************************************************/
     /* set measurement transformation                                       */
     /************************************************************************/
-    mf16 *H = kalman_get_measurement_transformation(&kfm);
+    mf16 *H = kalman_get_observation_transformation(&kfm);
 
     matrix_set(H, 0, 0, fix16_one);     // z = 1*s 
     matrix_set(H, 0, 1, 0);     //   + 0*v
@@ -176,7 +176,7 @@ void kalman_gravity_demo()
     kalman_gravity_init();
 
     mf16 *x = kalman_get_state_vector(&kf);
-    mf16 *z = kalman_get_measurement_vector(&kfm);
+    mf16 *z = kalman_get_observation_vector(&kfm);
     
     // filter!
     uint_fast16_t i;
@@ -209,7 +209,7 @@ void kalman_gravity_demo_lambda()
     kalman_gravity_init();
 
     mf16 *x = kalman_get_state_vector(&kf);
-    mf16 *z = kalman_get_measurement_vector(&kfm);
+    mf16 *z = kalman_get_observation_vector(&kfm);
 
     // forcibly increase uncertainty in every prediction step by ~20% (1/lambda^2)
     const fix16_t lambda = F16(0.9);

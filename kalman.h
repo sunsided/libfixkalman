@@ -14,7 +14,7 @@
 
 /*!
 * \brief Kalman Filter structure
-* \see kalman_measurement_t
+* \see kalman16_observation_t
 */
 typedef struct
 {
@@ -52,11 +52,11 @@ typedef struct
     */
     mf16 Q;
 
-} kalman_t;
+} kalman16_t;
 
 /*!
 * \brief Kalman Filter measurement structure
-* \see kalman_t
+* \see kalman16_t
 */
 typedef struct
 {
@@ -66,7 +66,7 @@ typedef struct
     mf16 z;
 
     /*!
-    * \brief Measurement transformation matrix (#measurements x #measurements)
+    * \brief Measurement transformation matrix (#measurements x #states)
     * \see R
     */
     mf16 H;
@@ -77,23 +77,7 @@ typedef struct
     */
     mf16 R;
 
-    /*!
-    * \brief Innovation vector (#measurements x 1)
-    */
-    mf16 y;
-
-    /*!
-    * \brief Residual covariance matrix (#measurements x #measurements)
-    * \see y
-    */
-    mf16 S;
-
-    /*!
-    * \brief Kalman gain matrix (#states x #measurements)
-    */
-    mf16 K;
-
-} kalman_measurement_t;
+} kalman16_observation_t;
 
 /*!
 * \brief Initializes the Kalman Filter
@@ -102,16 +86,16 @@ typedef struct
 * \param[in] num_inputs The number of input variables
 */
 COLD LEAF NONNULL
-void kalman_filter_initialize(kalman_t *kf, uint_fast8_t num_states, uint_fast8_t num_inputs);
+void kalman_filter_initialize(kalman16_t *const kf, uint_fast8_t num_states, uint_fast8_t num_inputs);
 
 /*!
 * \brief Sets the measurement vector
 * \param[in] kfm The Kalman Filter measurement structure to initialize
 * \param[in] num_states The number of states
-* \param[in] num_measurements The number of measurements
+* \param[in] num_observations The number of observations
 */
 COLD LEAF NONNULL
-void kalman_measurement_initialize(kalman_measurement_t *kfm, uint_fast8_t num_states, uint_fast8_t num_measurements);
+void kalman_observation_initialize(kalman16_observation_t *const kfm, uint_fast8_t num_states, uint_fast8_t num_observations);
 
 /*!
 * \brief Performs the time update / prediction step of only the state vector
@@ -121,7 +105,7 @@ void kalman_measurement_initialize(kalman_measurement_t *kfm, uint_fast8_t num_s
 * \see kalman_predict_tuned
 */
 HOT LEAF NONNULL
-void kalman_predict_x(register kalman_t *const kf);
+void kalman_predict_x(register kalman16_t *const kf);
 
 /*!
 * \brief Performs the time update / prediction step of only the state covariance matrix
@@ -131,7 +115,7 @@ void kalman_predict_x(register kalman_t *const kf);
 * \see kalman_predict_Q_tuned
 */
 HOT LEAF NONNULL
-void kalman_predict_Q(register kalman_t *const kf);
+void kalman_predict_Q(register kalman16_t *const kf);
 
 /*!
 * \brief Performs the time update / prediction step of only the state covariance matrix
@@ -141,7 +125,7 @@ void kalman_predict_Q(register kalman_t *const kf);
 * \see kalman_predict_Q
 */
 HOT LEAF NONNULL
-void kalman_predict_Q_tuned(register kalman_t *const kf, fix16_t lambda);
+void kalman_predict_Q_tuned(register kalman16_t *const kf, fix16_t lambda);
 
 /*!
 * \brief Performs the time update / prediction step.
@@ -154,7 +138,7 @@ void kalman_predict_Q_tuned(register kalman_t *const kf, fix16_t lambda);
 * \see kalman_predict_Q
 */
 LEAF NONNULL
-EXTERN_INLINE_KALMAN void kalman_predict(kalman_t *kf)
+EXTERN_INLINE_KALMAN void kalman_predict(kalman16_t *kf)
 {
     /************************************************************************/
     /* Predict next state using system dynamics                             */
@@ -182,7 +166,7 @@ EXTERN_INLINE_KALMAN void kalman_predict(kalman_t *kf)
 * \see kalman_predict_Q_tuned
 */
 LEAF HOT NONNULL
-EXTERN_INLINE_KALMAN void kalman_predict_tuned(kalman_t *kf, fix16_t lambda)
+EXTERN_INLINE_KALMAN void kalman_predict_tuned(kalman16_t *kf, fix16_t lambda)
 {
     /************************************************************************/
     /* Predict next state using system dynamics                             */
@@ -204,7 +188,7 @@ EXTERN_INLINE_KALMAN void kalman_predict_tuned(kalman_t *kf, fix16_t lambda)
 * \param[in] kf The Kalman Filter structure to correct.
 */
 HOT LEAF NONNULL
-void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm);
+void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm);
 
 /*!
 * \brief Gets a pointer to the state vector x.
@@ -212,7 +196,7 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm);
 * \return The state vector x.
 */
 LEAF RETURNS_NONNULL NONNULL HOT PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_state_vector(kalman_t *kf)
+EXTERN_INLINE_KALMAN mf16* kalman_get_state_vector(kalman16_t *kf)
 {
     return &(kf->x);
 }
@@ -223,7 +207,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_state_vector(kalman_t *kf)
 * \return The state transition matrix A.
 */
 LEAF RETURNS_NONNULL NONNULL HOT PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_state_transition(kalman_t *kf)
+EXTERN_INLINE_KALMAN mf16* kalman_get_state_transition(kalman16_t *kf)
 {
     return &(kf->A);
 }
@@ -234,7 +218,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_state_transition(kalman_t *kf)
 * \return The system covariance matrix.
 */
 LEAF RETURNS_NONNULL NONNULL PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_system_covariance(kalman_t *kf)
+EXTERN_INLINE_KALMAN mf16* kalman_get_system_covariance(kalman16_t *kf)
 {
     return &(kf->P);
 }
@@ -245,7 +229,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_system_covariance(kalman_t *kf)
 * \return The input vector u.
 */
 LEAF RETURNS_NONNULL NONNULL HOT PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_input_vector(kalman_t *kf)
+EXTERN_INLINE_KALMAN mf16* kalman_get_input_vector(kalman16_t *kf)
 {
     return &(kf->u);
 }
@@ -256,7 +240,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_input_vector(kalman_t *kf)
 * \return The input transition matrix B.
 */
 LEAF RETURNS_NONNULL NONNULL HOT PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_input_transition(kalman_t *kf)
+EXTERN_INLINE_KALMAN mf16* kalman_get_input_transition(kalman16_t *kf)
 {
     return &(kf->B);
 }
@@ -267,7 +251,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_input_transition(kalman_t *kf)
 * \return The input covariance matrix.
 */
 LEAF RETURNS_NONNULL NONNULL HOT PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_input_covariance(kalman_t *kf)
+EXTERN_INLINE_KALMAN mf16* kalman_get_input_covariance(kalman16_t *kf)
 {
     return &(kf->Q);
 }
@@ -278,7 +262,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_input_covariance(kalman_t *kf)
 * \return The measurement vector z.
 */
 LEAF RETURNS_NONNULL NONNULL HOT PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_measurement_vector(kalman_measurement_t *kfm)
+EXTERN_INLINE_KALMAN mf16* kalman_get_observation_vector(kalman16_observation_t *kfm)
 {
     return &(kfm->z);
 }
@@ -289,7 +273,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_measurement_vector(kalman_measurement_t *k
 * \return The measurement transformation matrix H.
 */
 RETURNS_NONNULL NONNULL HOT PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_measurement_transformation(kalman_measurement_t *kfm)
+EXTERN_INLINE_KALMAN mf16* kalman_get_observation_transformation(kalman16_observation_t *kfm)
 {
     return &(kfm->H);
 }
@@ -300,7 +284,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_measurement_transformation(kalman_measurem
 * \return The process noise matrix R.
 */
 LEAF RETURNS_NONNULL NONNULL HOT PURE 
-EXTERN_INLINE_KALMAN mf16* kalman_get_process_noise(kalman_measurement_t *kfm)
+EXTERN_INLINE_KALMAN mf16* kalman_get_process_noise(kalman16_observation_t *kfm)
 {
     return &(kfm->R);
 }

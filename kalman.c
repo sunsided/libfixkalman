@@ -20,25 +20,31 @@ STATIC_INLINE void mf16_mul_abat(mf16 *dest, const mf16 *a, const mf16 *b)
 * \param[in] num_states The number of state variables
 * \param[in] num_inputs The number of input variables
 */
-void kalman_filter_initialize(kalman_t *kf, uint_fast8_t num_states, uint_fast8_t num_inputs)
+void kalman_filter_initialize(kalman16_t *const kf, uint_fast8_t num_states, uint_fast8_t num_inputs)
 {
     kf->A.rows = num_states;
     kf->A.columns = num_states;
+    kf->A.errors = 0;
     
     kf->P.rows = num_states;
     kf->P.columns = num_states;
+    kf->P.errors = 0;
 
     kf->B.rows = num_inputs;
     kf->B.columns = num_inputs;
+    kf->B.errors = 0;
 
     kf->Q.rows = num_inputs;
     kf->Q.columns = num_inputs;
+    kf->Q.errors = 0;
 
     kf->x.rows = num_states;
     kf->x.columns = 1;
+    kf->x.errors = 0;
 
     kf->u.rows = num_inputs;
     kf->u.columns = 1;
+    kf->u.errors = 0;
 }
 
 
@@ -46,39 +52,38 @@ void kalman_filter_initialize(kalman_t *kf, uint_fast8_t num_states, uint_fast8_
 * \brief Sets the measurement vector
 * \param[in] kfm The Kalman Filter measurement structure to initialize
 * \param[in] num_states The number of states
-* \param[in] num_measurements The number of measurements
+* \param[in] num_measurements The number of observations
 */
-void kalman_measurement_initialize(kalman_measurement_t *kfm, uint_fast8_t num_states, uint_fast8_t num_measurements)
+void kalman_observation_initialize(kalman16_observation_t *const kfm, uint_fast8_t num_states, uint_fast8_t num_observations)
 {
-    kfm->H.rows = num_measurements;
+    kfm->H.rows = num_observations;
     kfm->H.columns = num_states;
+    kfm->H.errors = 0;
 
-    kfm->R.rows = num_measurements;
-    kfm->R.columns = num_measurements;
+    kfm->R.rows = num_observations;
+    kfm->R.columns = num_observations;
+    kfm->R.errors = 0;
 
-    kfm->z.rows = num_measurements;
+    kfm->z.rows = num_observations;
     kfm->z.columns = 1;
+    kfm->z.errors = 0;
 
-    kfm->K.rows = num_states;
-    kfm->K.columns = num_measurements;
-
-    kfm->S.rows = num_measurements;
-    kfm->S.columns = num_measurements;
-
-    kfm->y.rows = num_measurements;
-    kfm->y.columns = 1;
 }
 
 /*!
 * \brief Performs the time update / prediction step of only the state vector
 * \param[in] kf The Kalman Filter structure to predict with.
 */
-void kalman_predict_x(register kalman_t *const kf)
+void kalman_predict_x(register kalman16_t *const kf)
 {
     // matrices and vectors
     const mf16 *RESTRICT const A = &kf->A;
+    const mf16 *RESTRICT const B = &kf->B;
+    const mf16 *RESTRICT const u = &kf->u;
     mf16 *RESTRICT const x = &kf->x;
     
+    mf16 temp;
+
     /************************************************************************/
     /* Predict next state using system dynamics                             */
     /* x = A*x                                                              */
@@ -88,13 +93,22 @@ void kalman_predict_x(register kalman_t *const kf)
     mf16_mul(x, A, x);
     
     // TODO: Implement more efficient matrix/row vector multiply
+
+    if (B->rows > 0)
+    {
+        mf16_mul(&temp, B, u);       // temp = B*u
+        mf16_add(x, x, &temp);       // x += temp
+
+        // TODO: Implement matrix-matrix multiply-and-add
+        // TODO: Implement matrix-matrix add-in-place
+    }
 }
 
 /*!
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 */
-void kalman_predict_Q(register kalman_t *const kf)
+void kalman_predict_Q(register kalman16_t *const kf)
 {
     // matrices and vectors
     const mf16 *RESTRICT const A = &kf->A;
@@ -131,7 +145,7 @@ void kalman_predict_Q(register kalman_t *const kf)
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 */
-void kalman_predict_Q_tuned(register kalman_t *const kf, fix16_t lambda)
+void kalman_predict_Q_tuned(register kalman16_t *const kf, fix16_t lambda)
 {
     // matrices and vectors
     const mf16 *RESTRICT const A = &kf->A;
@@ -171,17 +185,15 @@ void kalman_predict_Q_tuned(register kalman_t *const kf, fix16_t lambda)
 * \brief Performs the measurement update step.
 * \param[in] kf The Kalman Filter structure to correct.
 */
-void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
+void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
 {
-    mf16 *RESTRICT const P = &kf->P;
-    const mf16 *RESTRICT const H = &kfm->H;
-    mf16 *RESTRICT const K = &kfm->K;
-    mf16 *RESTRICT const S = &kfm->S;
-    mf16 *RESTRICT const y = &kfm->y;
-    mf16 *RESTRICT const x = &kf->x;
-    
-    mf16 temp_HP = { H->rows, H->columns };
-    mf16 temp_PHt = { P->rows, H->columns };
+    mf16 *RESTRICT const        x = &kf->x;
+    mf16 *RESTRICT const        P = &kf->P;
+    const mf16 *RESTRICT const  H = &kfm->H;
+
+    static mf16 K, S, y,
+        temp_HP,    // { H->rows, H->columns };
+        temp_PHt;   // { P->rows, H->columns };
 
     /************************************************************************/
     /* Calculate innovation and residual covariance                         */
@@ -190,12 +202,12 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
     /************************************************************************/
 
     // y = z - H*x
-    mf16_mul(y, H, x);
-    mf16_sub(y, &kfm->z, y);
+    mf16_mul(&y, H, x);
+    mf16_sub(&y, &kfm->z, &y);
 
     // S = H*P*H' + R
-    mf16_mul_abat(S, H, P);               // temp = H*P*H'
-    mf16_add(S, &kfm->R, S);                // S += R 
+    mf16_mul_abat(&S, H, P);               // temp = H*P*H'
+    mf16_add(&S, &kfm->R, &S);                // S += R 
 
     /************************************************************************/
     /* Calculate Kalman gain                                                */
@@ -203,10 +215,10 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
     /************************************************************************/
 
     // K = P*H' * S^-1
-    mf16_cholesky(S, S);
-    mf16_invert_lt(S, S);               // Sinv = S^-1
+    mf16_cholesky(&S, &S);
+    mf16_invert_lt(&S, &S);               // Sinv = S^-1
     mf16_mul_bt(&temp_PHt, P, H);           // temp = P*H'
-    mf16_mul(K, &temp_PHt, S);          // K = temp*Sinv
+    mf16_mul(&K, &temp_PHt, &S);          // K = temp*Sinv
 
     /************************************************************************/
     /* Correct state prediction                                             */
@@ -214,8 +226,8 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
     /************************************************************************/
 
     // x = x + K*y 
-    mf16_mul(y, K, y);
-    mf16_add(x, x, y);
+    mf16_mul(&y, &K, &y);
+    mf16_add(x, x, &y);
 
     /************************************************************************/
     /* Correct state covariances                                            */
@@ -225,6 +237,6 @@ void kalman_correct(kalman_t *kf, kalman_measurement_t *kfm)
 
     // P = P - K*(H*P)
     mf16_mul(&temp_HP, H, P);            // temp_HP = H*P
-    mf16_mul(K, K, &temp_HP);     // temp_KHP = K*temp_HP
-    mf16_sub(P, P, K);           // P -= temp_KHP 
+    mf16_mul(&K, &K, &temp_HP);     // temp_KHP = K*temp_HP
+    mf16_sub(P, P, &K);           // P -= temp_KHP 
 }
