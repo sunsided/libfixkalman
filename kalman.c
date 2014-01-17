@@ -12,9 +12,13 @@ typedef enum {
 } addsub_t;
 
 // Calculates dest = dest +/- A * B
-void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, addsub_t mode)
+HOT PURE NONNULL void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, addsub_t mode)
 {
     int row, column;
+    const int 
+        acolumns = a->columns,
+        drows = dest->rows, 
+        dcolumns = dest->columns;
 
     // If dest and input matrices alias, we have to use a temp matrix.
     mf16 tmp;
@@ -28,21 +32,25 @@ void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, addsub_t mode)
     dest->rows = a->rows;
     dest->columns = b->columns;
 
-    for (row = 0; row < dest->rows; ++row)
+    for (row = drows-1; row >= 0; --row)
     {
-        for (column = 0; column < dest->columns; ++column)
+        const fix16_t *aptr = &a->data[row][0];
+        const fix16_t *bptr = &b->data[0][0];
+        fix16_t *rowptr = &dest->data[row][0];
+
+        for (column = dcolumns-1; column >= 0; --column)
         {
             fix16_t value = fa16_dot(
-                &a->data[row][0], 1,
-                &b->data[0][column], FIXMATRIX_MAX_SIZE,
-                a->columns);
+                aptr, 1,
+                bptr + column, FIXMATRIX_MAX_SIZE,
+                acolumns);
             
             if (mode == ADD)
-                dest->data[row][column] += value;
+                rowptr[column] += value;
             else
-                dest->data[row][column] -= value;
+                rowptr[column] -= value;
 
-            if (dest->data[row][column] == fix16_overflow)
+            if (rowptr[column] == fix16_overflow)
                 dest->errors |= FIXMATRIX_OVERFLOW;
         }
     }
