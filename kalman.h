@@ -6,13 +6,6 @@
 #include "fixmatrix.h"
 
 /*!
-* \def EXTERN_INLINE_KALMAN Helper inline to switch from local inline to extern inline
-*/
-#ifndef EXTERN_INLINE_KALMAN
-#define EXTERN_INLINE_KALMAN EXTERN_INLINE
-#endif
-
-/*!
 * \def KALMAN_DISABLE_UC Global define to disable functions for systems without control inputs
 */
 #ifdef KALMAN_DISABLE_UC
@@ -145,6 +138,21 @@ typedef struct
 
 } kalman16_observation_t;
 
+/************************************************************************/
+/* Helper defines                                                       */
+/************************************************************************/
+
+/*!
+* \def EXTERN_INLINE_KALMAN Helper inline to switch from local inline to extern inline
+*/
+#ifndef EXTERN_INLINE_KALMAN
+#define EXTERN_INLINE_KALMAN EXTERN_INLINE
+#endif
+
+/************************************************************************/
+/* Functions for systems with control inputs                            */
+/************************************************************************/
+
 #ifndef KALMAN_DISABLE_C
 
 /*!
@@ -156,31 +164,6 @@ typedef struct
 COLD LEAF NONNULL
 void kalman_filter_initialize(kalman16_t *const kf, uint_fast8_t num_states, uint_fast8_t num_inputs);
 
-#endif // KALMAN_DISABLE_C
-
-#ifndef KALMAN_DISABLE_UC
-
-/*!
-* \brief Initializes the Kalman Filter
-* \param[in] kf The Kalman Filter structure to initialize
-* \param[in] num_states The number of state variables
-*/
-COLD LEAF NONNULL
-void kalman_filter_initialize_uc(kalman16_uc_t *const kf, uint_fast8_t num_states);
-
-#endif // KALMAN_DISABLE_UC
-
-/*!
-* \brief Sets the measurement vector
-* \param[in] kfm The Kalman Filter measurement structure to initialize
-* \param[in] num_states The number of states
-* \param[in] num_observations The number of observations
-*/
-COLD LEAF NONNULL
-void kalman_observation_initialize(kalman16_observation_t *const kfm, uint_fast8_t num_states, uint_fast8_t num_observations);
-
-#ifndef KALMAN_DISABLE_C
-
 /*!
 * \brief Performs the time update / prediction step of only the state vector
 * \param[in] kf The Kalman Filter structure to predict with.
@@ -190,24 +173,6 @@ void kalman_observation_initialize(kalman16_observation_t *const kfm, uint_fast8
 */
 HOT LEAF NONNULL
 void kalman_predict_x(register kalman16_t *const kf);
-
-#endif // KALMAN_DISABLE_C
-
-#ifndef KALMAN_DISABLE_UC
-
-/*!
-* \brief Performs the time update / prediction step of only the state vector
-* \param[in] kf The Kalman Filter structure to predict with.
-*
-* \see kalman_predict_uc
-* \see kalman_predict_tuned_uc
-*/
-HOT LEAF NONNULL
-void kalman_predict_x_uc(register kalman16_uc_t *const kf);
-
-#endif // KALMAN_DISABLE_UC
-
-#ifndef KALMAN_DISABLE_C
 
 /*!
 * \brief Performs the time update / prediction step of only the state covariance matrix
@@ -219,23 +184,6 @@ void kalman_predict_x_uc(register kalman16_uc_t *const kf);
 HOT LEAF NONNULL
 void kalman_predict_P(register kalman16_t *const kf);
 
-#endif // KALMAN_DISABLE_C
-
-#ifndef KALMAN_DISABLE_UC
-
-/*!
-* \brief Performs the time update / prediction step of only the state covariance matrix
-* \param[in] kf The Kalman Filter structure to predict with.
-*
-* \see kalman_predict_uc
-* \see kalman_predict_P_tuned_uc
-*/
-HOT LEAF NONNULL
-void kalman_predict_P_uc(register kalman16_uc_t *const kf);
-
-#endif // KALMAN_DISABLE_UC
-
-#ifndef KALMAN_DISABLE_C
 #ifndef KALMAN_DISABLE_LAMBDA
 
 /*!
@@ -249,25 +197,6 @@ HOT LEAF NONNULL
 void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda);
 
 #endif // KALMAN_DISABLE_LAMBDA
-#endif // KALMAN_DISABLE_C
-
-#ifndef KALMAN_DISABLE_UC
-#ifndef KALMAN_DISABLE_LAMBDA
-
-/*!
-* \brief Performs the time update / prediction step of only the state covariance matrix
-* \param[in] kf The Kalman Filter structure to predict with.
-*
-* \see kalman_predict_tuned_uc
-* \see kalman_predict_P_uc
-*/
-HOT LEAF NONNULL
-void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda);
-
-#endif // KALMAN_DISABLE_LAMBDA
-#endif // KALMAN_DISABLE_UC
-
-#ifndef KALMAN_DISABLE_C
 
 /*!
 * \brief Performs the time update / prediction step.
@@ -297,41 +226,6 @@ EXTERN_INLINE_KALMAN void kalman_predict(kalman16_t *kf)
     kalman_predict_P(kf);
 }
 
-#endif // KALMAN_DISABLE_C
-
-#ifndef KALMAN_DISABLE_UC
-
-/*!
-* \brief Performs the time update / prediction step.
-* \param[in] kf The Kalman Filter structure to predict with.
-* \param[in] lambda Lambda factor (\c 0 < {\ref lambda} <= \c 1) to forcibly reduce prediction certainty. Smaller values mean larger uncertainty.
-*
-* This call assumes that the input covariance and variables are already set in the filter structure.
-*
-* \see kalman_predict_x
-* \see kalman_predict_P
-*/
-LEAF NONNULL
-EXTERN_INLINE_KALMAN void kalman_predict_uc(kalman16_uc_t *kf)
-{
-    /************************************************************************/
-    /* Predict next state using system dynamics                             */
-    /* x = A*x                                                              */
-    /************************************************************************/
-
-    kalman_predict_x_uc(kf);
-
-    /************************************************************************/
-    /* Predict next covariance using system dynamics and input              */
-    /* P = A*P*A' + B*Q*B'                                                  */
-    /************************************************************************/
-
-    kalman_predict_P_uc(kf);
-}
-
-#endif // KALMAN_DISABLE_UC
-
-#ifndef KALMAN_DISABLE_C
 #ifndef KALMAN_DISABLE_LAMBDA
 
 /*!
@@ -363,43 +257,6 @@ EXTERN_INLINE_KALMAN void kalman_predict_tuned(kalman16_t *kf, fix16_t lambda)
 }
 
 #endif // KALMAN_DISABLE_LAMBDA
-#endif // KALMAN_DISABLE_C
-
-#ifndef KALMAN_DISABLE_UC
-#ifndef KALMAN_DISABLE_LAMBDA
-
-/*!
-* \brief Performs the time update / prediction step.
-* \param[in] kf The Kalman Filter structure to predict with.
-* \param[in] lambda Lambda factor (\c 0 < {\ref lambda} <= \c 1) to forcibly reduce prediction certainty. Smaller values mean larger uncertainty.
-*
-* This call assumes that the input covariance and variables are already set in the filter structure.
-*
-* \see kalman_predict_x
-* \see kalman_predict_P_tuned
-*/
-LEAF HOT NONNULL
-EXTERN_INLINE_KALMAN void kalman_predict_tuned_uc(kalman16_uc_t *kf, fix16_t lambda)
-{
-    /************************************************************************/
-    /* Predict next state using system dynamics                             */
-    /* x = A*x                                                              */
-    /************************************************************************/
-
-    kalman_predict_x_uc(kf);
-
-    /************************************************************************/
-    /* Predict next covariance using system dynamics and input              */
-    /* P = A*P*A' * 1/lambda^2 + B*Q*B'                                     */
-    /************************************************************************/
-
-    kalman_predict_P_tuned_uc(kf, lambda);
-}
-
-#endif // KALMAN_DISABLE_LAMBDA
-#endif // KALMAN_DISABLE_UC
-
-#ifndef KALMAN_DISABLE_C
 
 /*!
 * \brief Performs the measurement update step.
@@ -407,21 +264,6 @@ EXTERN_INLINE_KALMAN void kalman_predict_tuned_uc(kalman16_uc_t *kf, fix16_t lam
 */
 HOT LEAF NONNULL
 void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm);
-
-#endif // KALMAN_DISABLE_C
-
-#ifndef KALMAN_DISABLE_UC
-
-/*!
-* \brief Performs the measurement update step.
-* \param[in] kf The Kalman Filter structure to correct.
-*/
-HOT LEAF NONNULL
-void kalman_correct_uc(kalman16_uc_t *kf, kalman16_observation_t *kfm);
-
-#endif // KALMAN_DISABLE_UC
-
-#ifndef KALMAN_DISABLE_C
 
 /*!
 * \brief Gets a pointer to the state vector x.
@@ -491,6 +333,20 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_input_covariance(kalman16_t *kf)
 
 #endif // KALMAN_DISABLE_C
 
+/************************************************************************/
+/* Functions for observation handling                                   */
+/************************************************************************/
+
+/*!
+* \brief Sets the measurement vector
+* \param[in] kfm The Kalman Filter measurement structure to initialize
+* \param[in] num_states The number of states
+* \param[in] num_observations The number of observations
+*/
+COLD LEAF NONNULL
+void kalman_observation_initialize(kalman16_observation_t *const kfm, uint_fast8_t num_states, uint_fast8_t num_observations);
+
+
 /*!
 * \brief Gets a pointer to the measurement vector z.
 * \param[in] kfm The Kalman Filter measurement structure.
@@ -524,7 +380,120 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_observation_process_noise(kalman16_observa
     return &(kfm->R);
 }
 
+/************************************************************************/
+/* Functions for systems without control inputs                         */
+/************************************************************************/
+
 #ifndef KALMAN_DISABLE_UC
+
+/*!
+* \brief Initializes the Kalman Filter
+* \param[in] kf The Kalman Filter structure to initialize
+* \param[in] num_states The number of state variables
+*/
+COLD LEAF NONNULL
+void kalman_filter_initialize_uc(kalman16_uc_t *const kf, uint_fast8_t num_states);
+
+/*!
+* \brief Performs the time update / prediction step of only the state vector
+* \param[in] kf The Kalman Filter structure to predict with.
+*
+* \see kalman_predict_uc
+* \see kalman_predict_tuned_uc
+*/
+HOT LEAF NONNULL
+void kalman_predict_x_uc(register kalman16_uc_t *const kf);
+
+/*!
+* \brief Performs the time update / prediction step of only the state covariance matrix
+* \param[in] kf The Kalman Filter structure to predict with.
+*
+* \see kalman_predict_uc
+* \see kalman_predict_P_tuned_uc
+*/
+HOT LEAF NONNULL
+void kalman_predict_P_uc(register kalman16_uc_t *const kf);
+
+#ifndef KALMAN_DISABLE_LAMBDA
+
+/*!
+* \brief Performs the time update / prediction step of only the state covariance matrix
+* \param[in] kf The Kalman Filter structure to predict with.
+*
+* \see kalman_predict_tuned_uc
+* \see kalman_predict_P_uc
+*/
+HOT LEAF NONNULL
+void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda);
+
+#endif // KALMAN_DISABLE_LAMBDA
+
+/*!
+* \brief Performs the time update / prediction step.
+* \param[in] kf The Kalman Filter structure to predict with.
+* \param[in] lambda Lambda factor (\c 0 < {\ref lambda} <= \c 1) to forcibly reduce prediction certainty. Smaller values mean larger uncertainty.
+*
+* This call assumes that the input covariance and variables are already set in the filter structure.
+*
+* \see kalman_predict_x
+* \see kalman_predict_P
+*/
+LEAF NONNULL
+EXTERN_INLINE_KALMAN void kalman_predict_uc(kalman16_uc_t *kf)
+{
+    /************************************************************************/
+    /* Predict next state using system dynamics                             */
+    /* x = A*x                                                              */
+    /************************************************************************/
+
+    kalman_predict_x_uc(kf);
+
+    /************************************************************************/
+    /* Predict next covariance using system dynamics and input              */
+    /* P = A*P*A' + B*Q*B'                                                  */
+    /************************************************************************/
+
+    kalman_predict_P_uc(kf);
+}
+
+#ifndef KALMAN_DISABLE_LAMBDA
+
+/*!
+* \brief Performs the time update / prediction step.
+* \param[in] kf The Kalman Filter structure to predict with.
+* \param[in] lambda Lambda factor (\c 0 < {\ref lambda} <= \c 1) to forcibly reduce prediction certainty. Smaller values mean larger uncertainty.
+*
+* This call assumes that the input covariance and variables are already set in the filter structure.
+*
+* \see kalman_predict_x
+* \see kalman_predict_P_tuned
+*/
+LEAF HOT NONNULL
+EXTERN_INLINE_KALMAN void kalman_predict_tuned_uc(kalman16_uc_t *kf, fix16_t lambda)
+{
+    /************************************************************************/
+    /* Predict next state using system dynamics                             */
+    /* x = A*x                                                              */
+    /************************************************************************/
+
+    kalman_predict_x_uc(kf);
+
+    /************************************************************************/
+    /* Predict next covariance using system dynamics and input              */
+    /* P = A*P*A' * 1/lambda^2 + B*Q*B'                                     */
+    /************************************************************************/
+
+    kalman_predict_P_tuned_uc(kf, lambda);
+}
+
+#endif // KALMAN_DISABLE_LAMBDA
+
+/*!
+* \brief Performs the measurement update step.
+* \param[in] kf The Kalman Filter structure to correct.
+*/
+HOT LEAF NONNULL
+void kalman_correct_uc(kalman16_uc_t *kf, kalman16_observation_t *kfm);
 
 /*!
 * \brief Gets a pointer to the state vector x.
