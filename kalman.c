@@ -1,18 +1,74 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include "fixarray.h"
+
 #define EXTERN_INLINE_KALMAN INLINE
 #include "kalman.h"
+
+typedef enum {
+    SUB = 0,
+    ADD = 1,
+} addsub_t;
+
+// Calculates dest = dest + A * B
+void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, addsub_t mode)
+{
+    int row, column;
+
+    // If dest and input matrices alias, we have to use a temp matrix.
+    mf16 tmp;
+    fa16_unalias(dest, (void**)&a, (void**)&b, &tmp, sizeof(tmp));
+
+    dest->errors = a->errors | b->errors;
+
+    if (a->columns != b->rows)
+        dest->errors |= FIXMATRIX_DIMERR;
+
+    dest->rows = a->rows;
+    dest->columns = b->columns;
+
+    for (row = 0; row < dest->rows; ++row)
+    {
+        for (column = 0; column < dest->columns; ++column)
+        {
+            fix16_t value = fa16_dot(
+                &a->data[row][0], 1,
+                &b->data[0][column], FIXMATRIX_MAX_SIZE,
+                a->columns);
+            
+            if (mode == ADD)
+                dest->data[row][column] += value;
+            else
+                dest->data[row][column] -= value;
+
+            if (dest->data[row][column] == fix16_overflow)
+                dest->errors |= FIXMATRIX_OVERFLOW;
+        }
+    }
+}
 
 /*!
 * \brief Calculates A*B*A'
 */
-LEAF NONNULL 
+LEAF NONNULL
 STATIC_INLINE void mf16_mul_abat(mf16 *dest, const mf16 *a, const mf16 *b)
 {
     mf16_mul(dest, a, b);
     mf16_mul_bt(dest, dest, a);
 }
+
+/*!
+* \brief Calculates dest += A*B*A'
+*/
+LEAF NONNULL
+STATIC_INLINE void mf16_mul_abat_add(mf16 *dest, const mf16 *a, const mf16 *b)
+{
+    mf16_mul_bt(dest, b, a);                // dest = B * A'
+    mf16_mul_addsub(dest, a, dest, ADD);    // dest += A * dest
+
+}
+
 
 #ifndef KALMAN_DISABLE_C
 
@@ -126,8 +182,6 @@ void kalman_predict_x(register kalman16_t *const kf)
     const mf16 *RESTRICT const B = &kf->B;
     const mf16 *RESTRICT const u = &kf->u;
     mf16 *RESTRICT const x = &kf->x;
-    
-    mf16 temp;
 
     /************************************************************************/
     /* Predict next state using system dynamics                             */
@@ -141,11 +195,7 @@ void kalman_predict_x(register kalman16_t *const kf)
 
     if (B->rows > 0)
     {
-        mf16_mul(&temp, B, u);       // temp = B*u
-        mf16_add(x, x, &temp);       // x += temp
-
-        // TODO: Implement matrix-matrix multiply-and-add
-        // TODO: Implement matrix-matrix add-in-place
+        mf16_mul_addsub(x, B, u, ADD);       // x += B*u
     }
 }
 
@@ -205,11 +255,7 @@ void kalman_predict_P(register kalman16_t *const kf)
     // P = P + B*Q*B'
     if (B->rows > 0)
     {
-        mf16_mul_abat(&BQ_temp, B, Q);          // temp = B*Q*B'
-        mf16_add(P, P, &BQ_temp);               // P += P_temp
-
-        // TODO: Implement matrix-matrix multiply-and-add
-        // TODO: Implement matrix-matrix add-in-place
+        mf16_mul_abat_add(P, B, Q);             // P += B*Q*B'
     }
 }
 
@@ -274,11 +320,7 @@ void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda)
     // P = P + B*Q*B'
     if (B->rows > 0)
     {
-        mf16_mul_abat(&BQ_temp, B, &kf->Q);     // temp = B*Q*B'
-        mf16_add(P, &BQ_temp, P);               // P += temp
-
-        // TODO: Implement matrix-matrix multiply-and-add
-        // TODO: Implement matrix-matrix add-in-place
+        mf16_mul_abat_add(P, B, &kf->Q);     // temp = B*Q*B'
     }
 }
 
@@ -354,7 +396,7 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     // K = P*H' * S^-1
     mf16_cholesky(&S, &S);
     mf16_invert_lt(&S, &S);               // Sinv = S^-1
-    mf16_mul_bt(&temp_PHt, P, H);           // temp = P*H'
+    mf16_mul_bt(&temp_PHt, P, H);         // temp = P*H'
     mf16_mul(&K, &temp_PHt, &S);          // K = temp*Sinv
 
     /************************************************************************/
@@ -363,8 +405,7 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     /************************************************************************/
 
     // x = x + K*y 
-    mf16_mul(&y, &K, &y);
-    mf16_add(x, x, &y);
+    mf16_mul_addsub(x, &K, &y, ADD);
 
     /************************************************************************/
     /* Correct state covariances                                            */
@@ -373,9 +414,8 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     /************************************************************************/
 
     // P = P - K*(H*P)
-    mf16_mul(&temp_HP, H, P);            // temp_HP = H*P
-    mf16_mul(&K, &K, &temp_HP);     // temp_KHP = K*temp_HP
-    mf16_sub(P, P, &K);           // P -= temp_KHP 
+    mf16_mul(&temp_HP, H, P);                  // temp_HP = H*P
+    mf16_mul_addsub(P, &K, &temp_HP, SUB);       // P -= K*temp_HP
 }
 
 #endif
