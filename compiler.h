@@ -38,6 +38,33 @@
 #endif
 
 /**
+* \def LEAF Marks a function as leaf
+*/
+#ifdef __GNUC__
+#define LEAF __attribute__ ((leaf))
+#else
+#define LEAF
+#endif
+
+/**
+* \def NONNULL Marks all function parameters as non-null
+*/
+#ifdef __GNUC__
+#define NONNULL __attribute__ ((nonnull))
+#else
+#define NONNULL
+#endif
+
+/**
+* \def RETURNS_NONNULL Marks the function return value as being non-null
+*/
+#ifdef __GNUC__
+#define RETURNS_NONNULL __attribute__ ((returns_nonnull))
+#else
+#define RETURNS_NONNULL
+#endif
+
+/**
 * \def INLINE Marks a function as to be inlined
 */
 #ifdef _MSC_VER
