@@ -16,7 +16,7 @@
 
 #include <assert.h>
 
-#include "kalman.h"
+#include "fixkalman.h"
 
 /**
 * \brief Enables usage of the functions specialized for systems without control inputs

@@ -4,7 +4,7 @@
 #include "fixarray.h"
 
 #define EXTERN_INLINE_KALMAN INLINE
-#include "kalman.h"
+#include "fixkalman.h"
 
 typedef enum {
     ADD = 0,
