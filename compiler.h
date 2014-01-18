@@ -67,10 +67,14 @@
 /**
 * \def INLINE Marks a function as to be inlined
 */
+#ifdef __GNUC__
+#define INLINE inline
+#else
 #ifdef _MSC_VER
 #define INLINE __inline
 #else
 #define INLINE inline
+#endif
 #endif
 
 /**
