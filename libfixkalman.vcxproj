@@ -79,7 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="libfixkalman\example_gravity.c" />
-    <ClCompile Include="libfixkalman\kalman.c" />
+    <ClCompile Include="libfixkalman\fixkalman.c" />
     <ClCompile Include="libfixmath\fix16.c" />
     <ClCompile Include="libfixmath\fix16_exp.c" />
     <ClCompile Include="libfixmath\fix16_sqrt.c" />
@@ -97,7 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libfixkalman\compiler.h" />
-    <ClInclude Include="libfixkalman\kalman.h" />
+    <ClInclude Include="libfixkalman\fixkalman.h" />
     <ClInclude Include="libfixmath\fix16.h" />
     <ClInclude Include="libfixmath\fix16_trig_sin_lut.h" />
     <ClInclude Include="libfixmath\fixmath.h" />
