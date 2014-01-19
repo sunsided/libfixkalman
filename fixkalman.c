@@ -6,13 +6,9 @@
 #define EXTERN_INLINE_KALMAN INLINE
 #include "fixkalman.h"
 
-typedef enum {
-    ADD = 0,
-    SUB = 1,
-} addsub_t;
-
-// Calculates dest = dest +/- A * B
-HOT PURE NONNULL void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, addsub_t mode)
+// Calculates dest = dest + A * B
+HOT NONNULL 
+STATIC_INLINE void mf16_mul_add(mf16 *dest, const mf16 *RESTRICT a, const mf16 *RESTRICT b)
 {
     int row, column;
     const int 
@@ -46,20 +42,106 @@ HOT PURE NONNULL void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, 
                 acolumns);
             
             // fetch and modify current value
-            fix16_t current_value = rowptr[column];
-            if (mode == ADD)
-                current_value += value;
-            else
-                current_value -= value;
+            rowptr[column] = fix16_add(rowptr[column], value);
 
 #ifndef FIXMATH_NO_OVERFLOW
             // test for overflows
             if (rowptr[column] == fix16_overflow)
                 dest->errors |= FIXMATRIX_OVERFLOW;
 #endif
+        }
+    }
+}
 
-            // write back
-            rowptr[column] = current_value;
+// Calculates dest = dest +/- A * B
+HOT NONNULL 
+STATIC_INLINE void mf16_mul_sub(mf16 *dest, const mf16 *RESTRICT a, const mf16 *RESTRICT b)
+{
+    int row, column;
+    const int
+        acolumns = a->columns,
+        drows = dest->rows,
+        dcolumns = dest->columns;
+
+    // If dest and input matrices alias, we have to use a temp matrix.
+    mf16 tmp;
+    fa16_unalias(dest, (void**)&a, (void**)&b, &tmp, sizeof(tmp));
+
+    dest->errors = a->errors | b->errors;
+
+    if (a->columns != b->rows)
+        dest->errors |= FIXMATRIX_DIMERR;
+
+    dest->rows = a->rows;
+    dest->columns = b->columns;
+
+    for (row = drows - 1; row >= 0; --row)
+    {
+        const fix16_t *aptr = &a->data[row][0];
+        const fix16_t *bptr = &b->data[0][0];
+        fix16_t *rowptr = &dest->data[row][0];
+
+        for (column = dcolumns - 1; column >= 0; --column)
+        {
+            fix16_t value = fa16_dot(
+                aptr, 1,
+                bptr + column, FIXMATRIX_MAX_SIZE,
+                acolumns);
+
+            // fetch and modify current value
+            rowptr[column] = fix16_sub(rowptr[column], value);
+
+#ifndef FIXMATH_NO_OVERFLOW
+            // test for overflows
+            if (rowptr[column] == fix16_overflow)
+                dest->errors |= FIXMATRIX_OVERFLOW;
+#endif
+        }
+    }
+}
+
+HOT NONNULL
+STATIC_INLINE void mf16_mul_and_scale(mf16 *dest, const mf16 *RESTRICT a, const mf16 *RESTRICT b, const register fix16_t scalar)
+{
+    int row, column;
+    const int
+        acolumns = a->columns,
+        drows = dest->rows,
+        dcolumns = dest->columns;
+
+    // If dest and input matrices alias, we have to use a temp matrix.
+    mf16 tmp;
+    fa16_unalias(dest, (void**)&a, (void**)&b, &tmp, sizeof(tmp));
+
+    dest->errors = a->errors | b->errors;
+
+    if (a->columns != b->rows)
+        dest->errors |= FIXMATRIX_DIMERR;
+
+    dest->rows = a->rows;
+    dest->columns = b->columns;
+
+    for (row = drows - 1; row >= 0; --row)
+    {
+        const fix16_t *aptr = &a->data[row][0];
+        const fix16_t *bptr = &b->data[0][0];
+        fix16_t *rowptr = &dest->data[row][0];
+
+        for (column = dcolumns - 1; column >= 0; --column)
+        {
+            fix16_t value = fa16_dot(
+                aptr, 1,
+                bptr + column, FIXMATRIX_MAX_SIZE,
+                acolumns);
+
+            // modify and set current value
+            rowptr[column] = fix16_mul(value, scalar);
+
+#ifndef FIXMATH_NO_OVERFLOW
+            // test for overflows
+            if (rowptr[column] == fix16_overflow)
+                dest->errors |= FIXMATRIX_OVERFLOW;
+#endif
         }
     }
 }
@@ -74,6 +156,17 @@ STATIC_INLINE void mf16_mul_abat(mf16 *dest, const mf16 *a, const mf16 *b)
     mf16_mul_bt(dest, dest, a);
 }
 
+
+/*!
+* \brief Calculates A*B*A' * scalar
+*/
+NONNULL
+STATIC_INLINE void mf16_mul_abat_s(mf16 *dest, const mf16 *a, const mf16 *b, fix16_t scalar)
+{
+    mf16_mul_bt(dest, b, a);                        // dest = B * A'
+    mf16_mul_and_scale(dest, a, dest, scalar);      // dest = A * dest * scalar
+}
+
 /*!
 * \brief Calculates dest += A*B*A'
 */
@@ -81,7 +174,7 @@ NONNULL
 STATIC_INLINE void mf16_mul_abat_add(mf16 *dest, const mf16 *a, const mf16 *b)
 {
     mf16_mul_bt(dest, b, a);                // dest = B * A'
-    mf16_mul_addsub(dest, a, dest, ADD);    // dest += A * dest
+    mf16_mul_add(dest, a, dest);            // dest += A * dest
 
 }
 
@@ -191,6 +284,7 @@ void kalman_observation_initialize(kalman16_observation_t *const kfm, uint_fast8
 * \brief Performs the time update / prediction step of only the state vector
 * \param[in] kf The Kalman Filter structure to predict with.
 */
+HOT NONNULL
 void kalman_predict_x(register kalman16_t *const kf)
 {
     // matrices and vectors
@@ -223,6 +317,7 @@ void kalman_predict_x(register kalman16_t *const kf)
 * \brief Performs the time update / prediction step of only the state vector
 * \param[in] kf The Kalman Filter structure to predict with.
 */
+HOT NONNULL
 void kalman_predict_x_uc(register kalman16_uc_t *const kf)
 {
     // matrices and vectors
@@ -246,6 +341,7 @@ void kalman_predict_x_uc(register kalman16_uc_t *const kf)
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 */
+HOT NONNULL
 void kalman_predict_P(register kalman16_t *const kf)
 {
     // matrices and vectors
@@ -283,6 +379,7 @@ void kalman_predict_P(register kalman16_t *const kf)
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 */
+HOT NONNULL
 void kalman_predict_P_uc(register kalman16_uc_t *const kf)
 {
     // matrices and vectors
@@ -363,6 +460,7 @@ void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda)
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 */
+HOT NONNULL
 void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda)
 {
     // matrices and vectors
@@ -374,8 +472,8 @@ void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda)
     /* Calculate lambda                                                     */
     /************************************************************************/
 
-    static fix16_t last_lambda = 1;
-    static fix16_t inv_lambda_cached = 1;
+    static fix16_t last_lambda = F16(1);
+    static fix16_t inv_lambda_cached = F16(1);
 
     register fix16_t inv_lambda = inv_lambda_cached;
     if (lambda != last_lambda)
@@ -392,8 +490,7 @@ void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda)
     /************************************************************************/
 
     // P = A*P*A'
-    mf16_mul_abat(P, A, P);                 // temp = A*P*A'
-    mf16_mul_s(P, P, inv_lambda);           // P *= 1/(lambda^2)
+    mf16_mul_abat_s(P, A, P, inv_lambda);   // temp = A*P*A' * 1/(lambda^2)
     mf16_add(P, P, Q);                      // P += Q
 }
 
@@ -406,6 +503,7 @@ void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda)
 * \brief Performs the measurement update step.
 * \param[in] kf The Kalman Filter structure to correct.
 */
+HOT NONNULL
 void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
 {
     mf16 *RESTRICT const        x = &kf->x;
@@ -447,7 +545,7 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     /************************************************************************/
 
     // x = x + K*y 
-    mf16_mul_addsub(x, &K, &y, ADD);
+    mf16_mul_add(x, &K, &y);
 
     /************************************************************************/
     /* Correct state covariances                                            */
@@ -456,22 +554,9 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     /************************************************************************/
 
     // P = P - K*(H*P)
-    mf16_mul(&temp_HP, H, P);                  // temp_HP = H*P
-    mf16_mul_addsub(P, &K, &temp_HP, SUB);       // P -= K*temp_HP
+    mf16_mul(&temp_HP, H, P);                   // temp_HP = H*P
+    mf16_mul_sub(P, &K, &temp_HP);              // P -= K*temp_HP
 }
 
 #endif
 
-#ifndef KALMAN_DISABLE_UC
-
-/*!
-* \brief Performs the measurement update step.
-* \param[in] kf The Kalman Filter structure to correct.
-*/
-void kalman_correct_uc(kalman16_uc_t *kf, kalman16_observation_t *kfm)
-{
-    // just be careful, kid
-    kalman_correct((kalman16_t*)kf, kfm);
-}
-
-#endif // KALMAN_DISABLE_UC

@@ -161,7 +161,7 @@ typedef struct
 * \param[in] num_states The number of state variables
 * \param[in] num_inputs The number of input variables
 */
-COLD LEAF NONNULL
+COLD NONNULL
 void kalman_filter_initialize(kalman16_t *const kf, uint_fast8_t num_states, uint_fast8_t num_inputs);
 
 /*!
@@ -171,7 +171,7 @@ void kalman_filter_initialize(kalman16_t *const kf, uint_fast8_t num_states, uin
 * \see kalman_predict
 * \see kalman_predict_tuned
 */
-HOT LEAF NONNULL
+HOT NONNULL
 void kalman_predict_x(register kalman16_t *const kf);
 
 /*!
@@ -181,7 +181,7 @@ void kalman_predict_x(register kalman16_t *const kf);
 * \see kalman_predict
 * \see kalman_predict_P_tuned
 */
-HOT LEAF NONNULL
+HOT NONNULL
 void kalman_predict_P(register kalman16_t *const kf);
 
 #ifndef KALMAN_DISABLE_LAMBDA
@@ -193,7 +193,7 @@ void kalman_predict_P(register kalman16_t *const kf);
 * \see kalman_predict_tuned
 * \see kalman_predict_P
 */
-HOT LEAF NONNULL
+HOT NONNULL
 void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda);
 
 #endif // KALMAN_DISABLE_LAMBDA
@@ -208,7 +208,7 @@ void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda);
 * \see kalman_predict_x
 * \see kalman_predict_P
 */
-LEAF NONNULL
+HOT NONNULL
 EXTERN_INLINE_KALMAN void kalman_predict(kalman16_t *kf)
 {
     /************************************************************************/
@@ -238,7 +238,7 @@ EXTERN_INLINE_KALMAN void kalman_predict(kalman16_t *kf)
 * \see kalman_predict_x
 * \see kalman_predict_P_tuned
 */
-LEAF HOT NONNULL
+HOT NONNULL
 EXTERN_INLINE_KALMAN void kalman_predict_tuned(kalman16_t *kf, fix16_t lambda)
 {
     /************************************************************************/
@@ -262,7 +262,7 @@ EXTERN_INLINE_KALMAN void kalman_predict_tuned(kalman16_t *kf, fix16_t lambda)
 * \brief Performs the measurement update step.
 * \param[in] kf The Kalman Filter structure to correct.
 */
-HOT LEAF NONNULL
+HOT NONNULL
 void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm);
 
 /*!
@@ -391,7 +391,7 @@ EXTERN_INLINE_KALMAN mf16* kalman_get_observation_process_noise(kalman16_observa
 * \param[in] kf The Kalman Filter structure to initialize
 * \param[in] num_states The number of state variables
 */
-COLD LEAF NONNULL
+COLD NONNULL
 void kalman_filter_initialize_uc(kalman16_uc_t *const kf, uint_fast8_t num_states);
 
 /*!
@@ -401,7 +401,7 @@ void kalman_filter_initialize_uc(kalman16_uc_t *const kf, uint_fast8_t num_state
 * \see kalman_predict_uc
 * \see kalman_predict_tuned_uc
 */
-HOT LEAF NONNULL
+HOT NONNULL
 void kalman_predict_x_uc(register kalman16_uc_t *const kf);
 
 /*!
@@ -411,7 +411,7 @@ void kalman_predict_x_uc(register kalman16_uc_t *const kf);
 * \see kalman_predict_uc
 * \see kalman_predict_P_tuned_uc
 */
-HOT LEAF NONNULL
+HOT NONNULL
 void kalman_predict_P_uc(register kalman16_uc_t *const kf);
 
 #ifndef KALMAN_DISABLE_LAMBDA
@@ -423,7 +423,7 @@ void kalman_predict_P_uc(register kalman16_uc_t *const kf);
 * \see kalman_predict_tuned_uc
 * \see kalman_predict_P_uc
 */
-HOT LEAF NONNULL
+HOT NONNULL
 void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda);
 
 #endif // KALMAN_DISABLE_LAMBDA
@@ -438,7 +438,7 @@ void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda)
 * \see kalman_predict_x
 * \see kalman_predict_P
 */
-LEAF NONNULL
+NONNULL
 EXTERN_INLINE_KALMAN void kalman_predict_uc(kalman16_uc_t *kf)
 {
     /************************************************************************/
@@ -468,7 +468,7 @@ EXTERN_INLINE_KALMAN void kalman_predict_uc(kalman16_uc_t *kf)
 * \see kalman_predict_x
 * \see kalman_predict_P_tuned
 */
-LEAF HOT NONNULL
+HOT NONNULL
 EXTERN_INLINE_KALMAN void kalman_predict_tuned_uc(kalman16_uc_t *kf, fix16_t lambda)
 {
     /************************************************************************/
@@ -492,8 +492,12 @@ EXTERN_INLINE_KALMAN void kalman_predict_tuned_uc(kalman16_uc_t *kf, fix16_t lam
 * \brief Performs the measurement update step.
 * \param[in] kf The Kalman Filter structure to correct.
 */
-HOT LEAF NONNULL
-void kalman_correct_uc(kalman16_uc_t *kf, kalman16_observation_t *kfm);
+HOT NONNULL
+STATIC_INLINE void kalman_correct_uc(kalman16_uc_t *kf, kalman16_observation_t *kfm)
+{
+    // just be careful, kid
+    kalman_correct((kalman16_t*)kf, kfm);
+}
 
 /*!
 * \brief Gets a pointer to the state vector x.
