@@ -146,7 +146,7 @@ void kalman_filter_initialize_uc(kalman16_uc_t *const kf, uint_fast8_t num_state
     mf16_fill(&kf->x, 0);
 
     kf->Q.rows = num_states;
-    kf->Q.columns = 1;
+    kf->Q.columns = num_states;
     kf->Q.errors = 0;
     mf16_fill(&kf->Q, 0);
 }
