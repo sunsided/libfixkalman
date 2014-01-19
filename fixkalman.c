@@ -45,13 +45,21 @@ HOT PURE NONNULL void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, 
                 bptr + column, FIXMATRIX_MAX_SIZE,
                 acolumns);
             
+            // fetch and modify current value
+            fix16_t current_value = rowptr[column];
             if (mode == ADD)
-                rowptr[column] += value;
+                current_value += value;
             else
-                rowptr[column] -= value;
+                current_value -= value;
 
+#ifndef FIXMATH_NO_OVERFLOW
+            // test for overflows
             if (rowptr[column] == fix16_overflow)
                 dest->errors |= FIXMATRIX_OVERFLOW;
+#endif
+
+            // write back
+            rowptr[column] = current_value;
         }
     }
 }
@@ -312,16 +320,29 @@ void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda)
     mf16 BQ_temp = { A->rows, B->columns };
 
     /************************************************************************/
+    /* Calculate lambda                                                     */
+    /************************************************************************/
+
+    static fix16_t last_lambda = 1;
+    static fix16_t inv_lambda_cached = 1;
+
+    register fix16_t inv_lambda = inv_lambda_cached;
+    if (lambda != last_lambda)
+    {
+        last_lambda = lambda;
+
+        // inv_lambda = 1/lambda^2
+        inv_lambda_cached = inv_lambda = fix16_div(F16(1), fix16_sq(lambda));
+    }
+
+    /************************************************************************/
     /* Predict next covariance using system dynamics and input              */
     /* P = A*P*A' * 1/lambda^2 + B*Q*B'                                     */
     /************************************************************************/
 
-    // lambda = 1/lambda^2
-    lambda = fix16_div(fix16_one, fix16_sq(lambda)); // TODO: This should be precalculated, e.g. using kalman_set_lambda(...);
-
     // P = A*P*A'
     mf16_mul_abat(P, A, P);                     // temp = A*P*A'
-    mf16_mul_s(P, P, lambda);                   // P *= 1/(lambda^2)
+    mf16_mul_s(P, P, inv_lambda);               // P *= 1/(lambda^2)
 
     // TODO: extract the code block below
 
@@ -350,16 +371,29 @@ void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda)
     mf16 *RESTRICT const P = &kf->P;
 
     /************************************************************************/
+    /* Calculate lambda                                                     */
+    /************************************************************************/
+
+    static fix16_t last_lambda = 1;
+    static fix16_t inv_lambda_cached = 1;
+
+    register fix16_t inv_lambda = inv_lambda_cached;
+    if (lambda != last_lambda)
+    {
+        last_lambda = lambda;
+
+        // inv_lambda = 1/lambda^2
+        inv_lambda_cached = inv_lambda = fix16_div(F16(1), fix16_sq(lambda));
+    }
+
+    /************************************************************************/
     /* Predict next covariance using system dynamics and input              */
     /* P = A*P*A' * 1/lambda^2 + B*Q*B'                                     */
     /************************************************************************/
 
-    // lambda = 1/lambda^2
-    lambda = fix16_div(fix16_one, fix16_sq(lambda)); // TODO: This should be precalculated, e.g. using kalman_set_lambda(...);
-
     // P = A*P*A'
     mf16_mul_abat(P, A, P);                 // temp = A*P*A'
-    mf16_mul_s(P, P, lambda);               // P *= 1/(lambda^2)
+    mf16_mul_s(P, P, inv_lambda);           // P *= 1/(lambda^2)
     mf16_add(P, P, Q);                      // P += Q
 }
 
