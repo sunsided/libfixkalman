@@ -20,6 +20,15 @@
 #endif
 
 /**
+* \def CONST Marks a function as const, i.e. without global state and wihout using external memory
+*/
+#ifdef __GNUC__
+#define CONST __attribute__ ((const))
+#else
+#define CONST
+#endif
+
+/**
 * \def HOT Marks a function as a hot spot
 */
 #ifdef __GNUC__
