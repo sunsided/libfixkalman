@@ -59,7 +59,7 @@ HOT PURE NONNULL void mf16_mul_addsub(mf16 *dest, const mf16 *a, const mf16 *b, 
 /*!
 * \brief Calculates A*B*A'
 */
-LEAF NONNULL
+NONNULL
 STATIC_INLINE void mf16_mul_abat(mf16 *dest, const mf16 *a, const mf16 *b)
 {
     mf16_mul(dest, a, b);
@@ -69,7 +69,7 @@ STATIC_INLINE void mf16_mul_abat(mf16 *dest, const mf16 *a, const mf16 *b)
 /*!
 * \brief Calculates dest += A*B*A'
 */
-LEAF NONNULL
+NONNULL
 STATIC_INLINE void mf16_mul_abat_add(mf16 *dest, const mf16 *a, const mf16 *b)
 {
     mf16_mul_bt(dest, b, a);                // dest = B * A'
