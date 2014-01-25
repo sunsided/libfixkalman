@@ -305,7 +305,7 @@ void kalman_predict_x(register kalman16_t *const kf)
 
     if (B->rows > 0)
     {
-        mf16_mul_addsub(x, B, u, ADD);       // x += B*u
+        mf16_mul_add(x, B, u);       // x += B*u
     }
 }
 
