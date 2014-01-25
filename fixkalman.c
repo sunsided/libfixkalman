@@ -35,6 +35,35 @@ STATIC_INLINE void mf16_add_scaled(mf16 *dest, const mf16 *RESTRICT a, const mf1
     }
 }
 
+// Calculates dest = (A + B) * s
+HOT NONNULL
+STATIC_INLINE void mf16_add_and_scale(mf16 *dest, const mf16 *RESTRICT a, const mf16 *RESTRICT b, const fix16_t s)
+{
+    int row, column;
+
+    if (dest->columns != a->columns || dest->rows != a->rows)
+        dest->errors |= FIXMATRIX_DIMERR;
+
+    if (a->columns != b->columns || a->rows != b->rows)
+        dest->errors |= FIXMATRIX_DIMERR;
+
+    for (row = 0; row < dest->rows; row++)
+    {
+        for (column = 0; column < dest->columns; column++)
+        {
+            register const fix16_t unscaled = fix16_add(a->data[row][column], b->data[row][column]);
+            register fix16_t sum = fix16_mul(unscaled, s);
+
+#ifndef FIXMATH_NO_OVERFLOW
+            if (sum == fix16_overflow)
+                dest->errors |= FIXMATRIX_OVERFLOW;
+#endif
+
+            dest->data[row][column] = sum;
+        }
+    }
+}
+
 // Calculates dest = dest + A * B
 HOT NONNULL 
 STATIC_INLINE void mf16_mul_add(mf16 *dest, const mf16 *RESTRICT a, const mf16 *RESTRICT b)
@@ -119,6 +148,53 @@ STATIC_INLINE void mf16_mul_sub(mf16 *dest, const mf16 *RESTRICT a, const mf16 *
 
             // fetch and modify current value
             rowptr[column] = fix16_sub(rowptr[column], value);
+
+#ifndef FIXMATH_NO_OVERFLOW
+            // test for overflows
+            if (rowptr[column] == fix16_overflow)
+                dest->errors |= FIXMATRIX_OVERFLOW;
+#endif
+        }
+    }
+}
+
+// Calculates dest = dest + (A * B) * s
+HOT NONNULL
+STATIC_INLINE void mf16_mul_add_scaled(mf16 *dest, const mf16 *RESTRICT a, const mf16 *RESTRICT b, const register fix16_t scale)
+{
+    int row, column;
+    const int
+        acolumns = a->columns,
+        drows = dest->rows,
+        dcolumns = dest->columns;
+
+    // If dest and input matrices alias, we have to use a temp matrix.
+    mf16 tmp;
+    fa16_unalias(dest, (void**)&a, (void**)&b, &tmp, sizeof(tmp));
+
+    dest->errors = a->errors | b->errors;
+
+    if (a->columns != b->rows)
+        dest->errors |= FIXMATRIX_DIMERR;
+
+    dest->rows = a->rows;
+    dest->columns = b->columns;
+
+    for (row = drows - 1; row >= 0; --row)
+    {
+        const fix16_t *aptr = &a->data[row][0];
+        const fix16_t *bptr = &b->data[0][0];
+        fix16_t *rowptr = &dest->data[row][0];
+
+        for (column = dcolumns - 1; column >= 0; --column)
+        {
+            fix16_t value = fa16_dot(
+                aptr, 1,
+                bptr + column, FIXMATRIX_MAX_SIZE,
+                acolumns);
+
+            // fetch and modify current value
+            rowptr[column] = fix16_add(rowptr[column], fix16_mul(value, scale));
 
 #ifndef FIXMATH_NO_OVERFLOW
             // test for overflows
@@ -379,9 +455,13 @@ void kalman_cpredict_x_uc(register kalman16_uc_t *const kf, register fix16_t del
     /************************************************************************/
 
     // x = A*x
+#if 0
     mf16 dx;
     mf16_mul(&dx, A, x);
     mf16_add_scaled(x, x, &dx, deltaT);
+#else
+    mf16_mul_add_scaled(x, A, x, deltaT);
+#endif
 }
 
 #endif // KALMAN_DISABLE_UC
@@ -468,9 +548,8 @@ void kalman_cpredict_P_uc(register kalman16_uc_t *const kf, register fix16_t del
 
     // P = A*P*A'
     mf16 dP;
-    mf16_mul_abat(&dP, A, P);                 // P = A*P*A'
-    mf16_add(&dP, &dP, Q);                      // P += Q
-    mf16_add_scaled(P, P, &dP, deltaT);
+    mf16_mul_abat(&dP, A, P);                 // dP = A*P*A'
+    mf16_add_and_scale(P, &dP, Q, deltaT);    // P = (dP + Q)*deltaT
 }
 
 #endif // KALMAN_DISABLE_UC
