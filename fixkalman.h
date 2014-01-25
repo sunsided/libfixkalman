@@ -258,12 +258,16 @@ EXTERN_INLINE_KALMAN void kalman_predict_tuned(kalman16_t *kf, fix16_t lambda)
 
 #endif // KALMAN_DISABLE_LAMBDA
 
+#endif // KALMAN_DISABLE_C
+
 /*!
 * \brief Performs the measurement update step.
 * \param[in] kf The Kalman Filter structure to correct.
 */
 HOT NONNULL
 void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm);
+
+#ifndef KALMAN_DISABLE_C
 
 /*!
 * \brief Gets a pointer to the state vector x.
