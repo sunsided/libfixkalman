@@ -6,6 +6,35 @@
 #define EXTERN_INLINE_KALMAN INLINE
 #include "fixkalman.h"
 
+// Calculates dest = A + B * s
+HOT NONNULL
+STATIC_INLINE void mf16_add_scaled(mf16 *dest, const mf16 *RESTRICT a, const mf16 *RESTRICT b, const fix16_t s)
+{
+    int row, column;
+
+    if (dest->columns != a->columns || dest->rows != a->rows)
+        dest->errors |= FIXMATRIX_DIMERR;
+
+    if (a->columns != b->columns || a->rows != b->rows)
+        dest->errors |= FIXMATRIX_DIMERR;
+
+    for (row = 0; row < dest->rows; row++)
+    {
+        for (column = 0; column < dest->columns; column++)
+        {
+            register const fix16_t scaled = fix16_mul(b->data[row][column], s);
+            register fix16_t sum = fix16_add(a->data[row][column], scaled);
+
+#ifndef FIXMATH_NO_OVERFLOW
+            if (sum == fix16_overflow)
+                dest->errors |= FIXMATRIX_OVERFLOW;
+#endif
+
+            dest->data[row][column] = sum;
+        }
+    }
+}
+
 // Calculates dest = dest + A * B
 HOT NONNULL 
 STATIC_INLINE void mf16_mul_add(mf16 *dest, const mf16 *RESTRICT a, const mf16 *RESTRICT b)
@@ -333,6 +362,28 @@ void kalman_predict_x_uc(register kalman16_uc_t *const kf)
     mf16_mul(x, A, x);
 }
 
+/*!
+* \brief Performs the time update / prediction step of only the state vector
+* \param[in] kf The Kalman Filter structure to predict with.
+*/
+HOT NONNULL
+void kalman_cpredict_x_uc(register kalman16_uc_t *const kf, register fix16_t deltaT)
+{
+    // matrices and vectors
+    const mf16 *RESTRICT const A = &kf->A;
+    mf16 *RESTRICT const x = &kf->x;
+
+    /************************************************************************/
+    /* Predict next state using system dynamics                             */
+    /* x = A*x                                                              */
+    /************************************************************************/
+
+    // x = A*x
+    mf16 dx;
+    mf16_mul(&dx, A, x);
+    mf16_add_scaled(x, x, &dx, deltaT);
+}
+
 #endif // KALMAN_DISABLE_UC
 
 #ifndef KALMAN_DISABLE_C
@@ -395,6 +446,31 @@ void kalman_predict_P_uc(register kalman16_uc_t *const kf)
     // P = A*P*A'
     mf16_mul_abat(P, A, P);                 // P = A*P*A'
     mf16_add(P, P, Q);                      // P += Q
+}
+
+/*!
+* \brief Performs the time update / prediction step of only the state covariance matrix
+* \param[in] kf The Kalman Filter structure to predict with.
+* \param[in] deltaT The time differential (seconds)
+*/
+HOT NONNULL
+void kalman_cpredict_P_uc(register kalman16_uc_t *const kf, register fix16_t deltaT)
+{
+    // matrices and vectors
+    const mf16 *RESTRICT const A = &kf->A;
+    const mf16 *RESTRICT const Q = &kf->Q;
+    mf16 *RESTRICT const P = &kf->P;
+
+    /************************************************************************/
+    /* Predict next covariance using system dynamics and input              */
+    /* P = A*P*A' + B*Q*B'                                                  */
+    /************************************************************************/
+
+    // P = A*P*A'
+    mf16 dP;
+    mf16_mul_abat(&dP, A, P);                 // P = A*P*A'
+    mf16_add(&dP, &dP, Q);                      // P += Q
+    mf16_add_scaled(P, P, &dP, deltaT);
 }
 
 #endif // KALMAN_DISABLE_UC

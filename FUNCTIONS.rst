@@ -229,6 +229,23 @@ matrix afterwards.
 
 If input values are used, the user is required to set the values in ``kfm.u`` prior to calling this function.
 
+kalman_cpredict_uc
+------------------
+Kalman filter continuous-time prediction (time update) and integration step::
+    
+    void kalman_predict_uc(kalman16_uc_t *kf, register fix16_t deltaT);
+
+:kf:        The filter to update.
+:deltaT:    The time differential in seconds.
+
+This performs a state and covariance update according to the state transition model *A*.
+
+This function is a thin wrapper around `kalman_cpredict_x_uc`_ and `kalman_cpredict_P_uc`_.
+It is often more efficient to perform the state update manually instead of relying on the matrix multiplication algorithm. In this case, `kalman_cpredict_P_uc`_ can be used to update the system covariance
+matrix afterwards.
+
+If input values are used, the user is required to set the values in ``kfm.u`` prior to calling this function.
+
 kalman_predict_tuned_uc
 -----------------------
 Kalman filter prediction (time update) step with applied certainty tuning::
@@ -259,6 +276,19 @@ This performs a state-only (i.e. no covariance) update according to the state tr
 
 If input values are used, the user is required to set the values in ``kfm.u`` prior to calling this function.
 
+kalman_cpredict_x_uc
+-------------------
+Kalman filter continuous-time state-only prediction (time update) and integration step::
+    
+    void kalman_predict_x_uc(kalman16_uc_t *kf, register fix16_t deltaT);
+
+:kf:        The filter to update.
+:deltaT:	The time differential in seconds,
+
+This performs a state-only (i.e. no covariance) update according to the state transition model *A*.
+
+If input values are used, the user is required to set the values in ``kfm.u`` prior to calling this function.
+
 kalman_predict_P_uc
 -------------------
 Kalman filter covariance-only prediction (time update) step::
@@ -270,6 +300,19 @@ Kalman filter covariance-only prediction (time update) step::
 This performs a covariance-only (i.e. no state) update according to the state transition model *A*.
 
 In cases where it is more efficient to calculate the state update manually (i.e. by not calling `kalman_predict`_), *kalman_predict_P* can be used to update the covariance matrix.
+
+kalman_cpredict_P_uc
+-------------------
+Kalman filter cintinuous-time covariance-only prediction (time update) and integration step::
+    
+    void kalman_predict_P_uc(kalman16_uc_t *kf, register fix16_t deltaT);
+
+:kf:        The filter to update.
+:deltaT:	The time differential.
+
+This performs a covariance-only (i.e. no state) update according to the state transition model *A*.
+
+In cases where it is more efficient to calculate the state update manually (i.e. by not calling `kalman_cpredict`_), *kalman_cpredict_P* can be used to update the covariance matrix.
 
 kalman_predict_P_tuned_uc
 --------------------------

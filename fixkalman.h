@@ -409,6 +409,17 @@ HOT NONNULL
 void kalman_predict_x_uc(register kalman16_uc_t *const kf);
 
 /*!
+* \brief Performs the time update / prediction step of only the state vector with integration.
+* \param[in] kf The Kalman Filter structure to predict with.
+* \param[in] deltaT The time differential (seconds)
+*
+* \see kalman_predict_uc
+* \see kalman_predict_tuned_uc
+*/
+HOT NONNULL
+void kalman_cpredict_x_uc(register kalman16_uc_t *const kf, register fix16_t deltaT);
+
+/*!
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 *
@@ -417,6 +428,17 @@ void kalman_predict_x_uc(register kalman16_uc_t *const kf);
 */
 HOT NONNULL
 void kalman_predict_P_uc(register kalman16_uc_t *const kf);
+
+/*!
+* \brief Performs the continuous-time time update / prediction step of only the state covariance matrix with integration.
+* \param[in] kf The Kalman Filter structure to predict with.
+* \param[in] deltaT The time differential (seconds)
+*
+* \see kalman_predict_uc
+* \see kalman_predict_P_tuned_uc
+*/
+HOT NONNULL
+void kalman_cpredict_P_uc(register kalman16_uc_t *const kf, register fix16_t deltaT);
 
 #ifndef KALMAN_DISABLE_LAMBDA
 
@@ -458,6 +480,34 @@ EXTERN_INLINE_KALMAN void kalman_predict_uc(kalman16_uc_t *kf)
     /************************************************************************/
 
     kalman_predict_P_uc(kf);
+}
+
+/*!
+* \brief Performs the continous-time filter time update / prediction step with integration.
+* \param[in] kf The Kalman Filter structure to predict with.
+* \param[in] deltaT The time differential (seconds)
+*
+* This call assumes that the input covariance and variables are already set in the filter structure.
+*
+* \see kalman_predict_x
+* \see kalman_predict_P
+*/
+NONNULL
+EXTERN_INLINE_KALMAN void kalman_cpredict_uc(kalman16_uc_t *kf, register fix16_t deltaT)
+{
+    /************************************************************************/
+    /* Predict next state using system dynamics                             */
+    /* x = A*x                                                              */
+    /************************************************************************/
+
+    kalman_cpredict_x_uc(kf, deltaT);
+
+    /************************************************************************/
+    /* Predict next covariance using system dynamics and input              */
+    /* P = A*P*A' + B*Q*B'                                                  */
+    /************************************************************************/
+
+    kalman_cpredict_P_uc(kf, deltaT);
 }
 
 #ifndef KALMAN_DISABLE_LAMBDA
