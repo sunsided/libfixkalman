@@ -304,7 +304,7 @@ void kalman_filter_initialize(kalman16_t *const kf, uint_fast8_t num_states, uin
     kf->P.errors = 0;
     mf16_fill(&kf->P, 0);
 
-    kf->B.rows = num_inputs;
+    kf->B.rows = num_states;
     kf->B.columns = num_inputs;
     kf->B.errors = 0;
     mf16_fill(&kf->B, 0);
