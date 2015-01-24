@@ -1,4 +1,4 @@
-.. image:: https://raw2.github.com/sunsided/libfixkalman/static/kalman.png
+.. image:: https://raw.githubusercontent.com/sunsided/libfixkalman/static/kalman.png
    :align: right
 
 Fixed point Kalman filter library
