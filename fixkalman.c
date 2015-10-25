@@ -278,8 +278,9 @@ STATIC_INLINE void mf16_mul_abat_s(mf16 *dest, const mf16 *a, const mf16 *b, fix
 NONNULL
 STATIC_INLINE void mf16_mul_abat_add(mf16 *dest, const mf16 *a, const mf16 *b)
 {
-    mf16_mul_bt(dest, b, a);                // dest = B * A'
-    mf16_mul_add(dest, a, dest);            // dest += A * dest
+    mf16 func_temp = { a->rows, b->rows };
+    mf16_mul_bt(&func_temp, b, a);                // dest = B * A'
+    mf16_mul_add(dest, a, &func_temp);            // dest += A * dest
 
 }
 
