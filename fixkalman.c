@@ -703,6 +703,8 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     // x = x + K*y 
     mf16_mul_add(x, &K, &y);
 
+#ifndef KALMAN_JOSEPH_FORM
+
     /************************************************************************/
     /* Correct state covariances                                            */
     /* P = (I-K*H) * P                                                      */
@@ -712,6 +714,23 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     // P = P - K*(H*P)
     mf16_mul(&temp_HP, H, P);                   // temp_HP = H*P
     mf16_mul_sub(P, &K, &temp_HP);              // P -= K*temp_HP
+
+#else
+
+    /************************************************************************/
+    /* Correct state covariances                                            */
+	/* Joseph form                                                          */
+    /* P = (I-K*H)*P*(I-K*H)' + K*R*K'                                      */
+    /************************************************************************/
+
+    mf16_fill(&temp_HP, F16(0));                // temp_HP reset
+    mf16_fill_diagonal(&temp_HP, fix16_one);    // temp_HP to I (identity matrix)
+    mf16_mul_sub(&temp_HP, &K, H);              // temp_HP = (I-K*H)
+    mf16_mul_abat(P, &temp_HP, P);              // P = (I-K*H)*P*(I-K*H)'
+    mf16_mul_abat_add(P, &K, &kfm->R);          // P += K*R*K'
+
+#endif /* KALMAN_JOSEPH_FORM */
+
 }
 
 #endif

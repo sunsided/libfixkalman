@@ -21,6 +21,7 @@ In order to reduce code size, some features can be disabled by globally defining
 :KALMAN_DISABLE_UC:         Disable filter functions for systems without control input. Set this if all your systems use control input or if you use certainty tuning.
 :KALMAN_DISABLE_C:          Disable filter functions for systems with control inputs. Set this if none of your systems use control input.
 :KALMAN_DISABLE_LAMBDA:     Disable filter functions with certainty tuning (lambda parameter). Set this if you do not need to control filter convergence speed.
+:KALMAN_JOSEPH_FORM:        Enable the Joseph form of the covariance update equation. Set this if Kalman gain is non-optimal or your filter has problems with numerical stability. Please be aware that this form of the covariance update equation is computationally more expensive. Set this definition in settings.h.
 
 Definitions
 ===========
