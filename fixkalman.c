@@ -2,6 +2,7 @@
 #include <assert.h>
 
 #include "fixarray.h"
+#include "settings.h"
 
 #define EXTERN_INLINE_KALMAN INLINE
 #include "fixkalman.h"
