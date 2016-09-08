@@ -31,11 +31,11 @@ In general, to reference the library you'd provide a ``conanfile.txt`` with the 
     [requires]
     libfixkalman/20161008@sunside/stable
 
-where ``20161008`` would be replaced with the latest version as found via ``conan search -v libfixkalman*` -r=conan.io`. You can then just::
+where ``20161008`` would be replaced with the latest version as found via ``conan search -v libfixkalman* -r=conan.io``. You can then just::
 
     conan install
 
-or
+or::
 
     conan install --build
 
