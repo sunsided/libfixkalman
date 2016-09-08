@@ -31,7 +31,7 @@ In general, to reference the library you'd provide a ``conanfile.txt`` with the 
     [requires]
     libfixkalman/20161008@sunside/stable
 
-where ``20161008`` would be replaced with the latest version as found via ``conan search -v libfixkalman* -r=conan.io``. You can then just::
+which corresponds to `this package`_, where ``20161008`` could be replaced with the latest version as found via ``conan search -v libfixkalman* -r=conan.io``. You can then just::
 
     conan install
 
@@ -42,3 +42,4 @@ or::
 to obtain all required references.
 
 .. _`conan.io`: https://conan.io/
+.. _`this package`: https://conan.io/source/libfixkalman/20161008/sunside/stable
