@@ -2,6 +2,7 @@
 #include <assert.h>
 
 #include "fixarray.h"
+#include "settings.h"
 
 #define EXTERN_INLINE_KALMAN INLINE
 #include "fixkalman.h"
@@ -310,10 +311,21 @@ void kalman_filter_initialize(kalman16_t *const kf, uint_fast8_t num_states, uin
     kf->B.errors = 0;
     mf16_fill(&kf->B, 0);
 
+#ifndef KALMAN_TIME_VARYING
+
+    kf->Q.rows = num_states;
+    kf->Q.columns = num_states;
+    kf->Q.errors = 0;
+    mf16_fill(&kf->Q, 0);
+
+#else
+
     kf->Q.rows = num_inputs;
     kf->Q.columns = num_inputs;
     kf->Q.errors = 0;
     mf16_fill(&kf->Q, 0);
+
+#endif
 
     kf->x.rows = num_states;
     kf->x.columns = 1;
@@ -487,7 +499,8 @@ void kalman_predict_P(register kalman16_t *const kf)
 
     /************************************************************************/
     /* Predict next covariance using system dynamics and input              */
-    /* P = A*P*A' + B*Q*B'                                                  */
+    /* P = A*P*A' + B*Q*B' if KALMAN_TIME_VARYING is defined                */
+    /* P = A*P*A' + Q if KALMAN_TIME_VARYING is not defined                 */
     /************************************************************************/
 
     // P = A*P*A'
@@ -499,7 +512,11 @@ void kalman_predict_P(register kalman16_t *const kf)
     // P = P + B*Q*B'
     if (B->rows > 0)
     {
+#ifndef KALMAN_TIME_VARYING
+        mf16_add(P, P, Q);                      // P += Q
+#else
         mf16_mul_abat_add(P, B, Q);             // P += B*Q*B'
+#endif
     }
 }
 
@@ -521,7 +538,7 @@ void kalman_predict_P_uc(register kalman16_uc_t *const kf)
 
     /************************************************************************/
     /* Predict next covariance using system dynamics and input              */
-    /* P = A*P*A' + B*Q*B'                                                  */
+    /* P = A*P*A' + Q                                                       */
     /************************************************************************/
 
     // P = A*P*A'
@@ -544,7 +561,7 @@ void kalman_cpredict_P_uc(register kalman16_uc_t *const kf, register fix16_t del
 
     /************************************************************************/
     /* Predict next covariance using system dynamics and input              */
-    /* P = A*P*A' + B*Q*B'                                                  */
+    /* P = (A*P*A' + Q) * deltaT                                            */
     /************************************************************************/
 
     // P = A*P*A'
@@ -590,7 +607,8 @@ void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda)
 
     /************************************************************************/
     /* Predict next covariance using system dynamics and input              */
-    /* P = A*P*A' * 1/lambda^2 + B*Q*B'                                     */
+    /* P = A*P*A' * 1/lambda^2 + B*Q*B' if KALMAN_TIME_VARYING is defined   */
+    /* P = A*P*A' * 1/lambda^2 + Q if KALMAN_TIME_VARYING is not defined    */
     /************************************************************************/
 
     // P = A*P*A'
@@ -602,7 +620,11 @@ void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda)
     // P = P + B*Q*B'
     if (B->rows > 0)
     {
-        mf16_mul_abat_add(P, B, &kf->Q);     // temp = B*Q*B'
+#ifndef KALMAN_TIME_VARYING
+        mf16_add(P, P, &kf->Q);                 // P += Q
+#else
+        mf16_mul_abat_add(P, B, &kf->Q);        // temp = B*Q*B'
+#endif
     }
 }
 
@@ -642,7 +664,7 @@ void kalman_predict_P_tuned_uc(register kalman16_uc_t *const kf, fix16_t lambda)
 
     /************************************************************************/
     /* Predict next covariance using system dynamics and input              */
-    /* P = A*P*A' * 1/lambda^2 + B*Q*B'                                     */
+    /* P = A*P*A' * 1/lambda^2 + Q                                          */
     /************************************************************************/
 
     // P = A*P*A'
@@ -703,6 +725,8 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     // x = x + K*y 
     mf16_mul_add(x, &K, &y);
 
+#ifndef KALMAN_JOSEPH_FORM
+
     /************************************************************************/
     /* Correct state covariances                                            */
     /* P = (I-K*H) * P                                                      */
@@ -712,6 +736,23 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     // P = P - K*(H*P)
     mf16_mul(&temp_HP, H, P);                   // temp_HP = H*P
     mf16_mul_sub(P, &K, &temp_HP);              // P -= K*temp_HP
+
+#else
+
+    /************************************************************************/
+    /* Correct state covariances                                            */
+	/* Joseph form                                                          */
+    /* P = (I-K*H)*P*(I-K*H)' + K*R*K'                                      */
+    /************************************************************************/
+
+    mf16_fill(&temp_HP, F16(0));                // temp_HP reset
+    mf16_fill_diagonal(&temp_HP, fix16_one);    // temp_HP to I (identity matrix)
+    mf16_mul_sub(&temp_HP, &K, H);              // temp_HP = (I-K*H)
+    mf16_mul_abat(P, &temp_HP, P);              // P = (I-K*H)*P*(I-K*H)'
+    mf16_mul_abat_add(P, &K, &kfm->R);          // P += K*R*K'
+
+#endif /* KALMAN_JOSEPH_FORM */
+
 }
 
 #endif
