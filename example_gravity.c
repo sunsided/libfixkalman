@@ -16,6 +16,9 @@
 
 #include <assert.h>
 
+#define KALMAN_TIME_VARYING
+#define KALMAN_JOSEPH_FORM
+
 #include "fixkalman.h"
 
 /**

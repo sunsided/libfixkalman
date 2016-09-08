@@ -21,6 +21,8 @@ In order to reduce code size, some features can be disabled by globally defining
 :KALMAN_DISABLE_UC:         Disable filter functions for systems without control input. Set this if all your systems use control input or if you use certainty tuning.
 :KALMAN_DISABLE_C:          Disable filter functions for systems with control inputs. Set this if none of your systems use control input.
 :KALMAN_DISABLE_LAMBDA:     Disable filter functions with certainty tuning (lambda parameter). Set this if you do not need to control filter convergence speed.
+:KALMAN_JOSEPH_FORM:        Enable the Joseph form of the covariance update equation. Set this if Kalman gain is non-optimal or your filter has problems with numerical stability. Please be aware that this form of the covariance update equation is computationally more expensive. Set this definition in settings.h.
+:KALMAN_TIME_VARYING:       Enable time-varying Kalman filter for Kalman filter with control input. In this case the square system process noise matrix is replaced by the  square contol input covariance matrix and the covariance prediction step changes from ``P = A*P*A' + Q`` to ``P = A*P*A' + B*Q*B'``. Set this definition in settings.h.
 
 Definitions
 ===========
@@ -38,7 +40,8 @@ Data structure for the filter state. ::
         mf16 P; // S x S
         mf16 u; // C x 1
         mf16 B; // S x C
-        mf16 Q; // C x C
+        mf16 Q; // C x C    if KALMAN_TIME_VARYING is defined
+        mf16 Q; // S x S    if KALMAN_TIME_VARYING is not defined
     } kalman16_t;
 
 :x:         System state vector. Number of rows in the vector, 1 <= rows <= FIXMATRIX_MAX_SIZE.
@@ -46,7 +49,8 @@ Data structure for the filter state. ::
 :P:         Square system state covariance matrix. Number of rows and columns is identical to ``A``.
 :u:         Input vector. Number of rows in the vector, 1 <= rows <= FIXMATRIX_MAX_SIZE.
 :B:         Control input model matrix. Number of rows in the matrix is equal to the number of rows in the state vector ``x``. Number of columns in the matrix is equal to the number of rows in the input vector ``u``.
-:Q:         Square contol input covariance matrix. Number of rows and columns in the matrix is equal to the number of rows in the input vector ``u``.
+:Q:         Square contol input covariance matrix. Number of rows and columns in the matrix is equal to the number of rows in the input vector ``u``. (if KALMAN_TIME_VARYING is defined)
+:Q:         Square system process noise matrix. Number of rows and columns is identical to ``A``. (if KALMAN_TIME_VARYING is not defined)
 
 The filter structure can be initialized by calling
 
