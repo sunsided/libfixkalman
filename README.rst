@@ -18,3 +18,27 @@ See `function reference`_ for further details and `example_gravity.c`_ for examp
 .. _EJML: https://code.google.com/p/efficient-java-matrix-library/
 .. _function reference: https://github.com/sunsided/libfixkalman/blob/master/FUNCTIONS.rst
 .. _`example_gravity.c`: https://github.com/sunsided/libfixkalman/blob/master/example_gravity.c
+
+conan.io
+--------
+
+This library now has experimental support for the `conan.io`_ package manager and is aimed at CMake. Both ``libfixmath`` and ``libfixmatrix`` dependencies are available on conan.io and you should be able to verify the package building process by calling::
+
+    conan test_package --build
+
+In general, to reference the library you'd provide a ``conanfile.txt`` with the following content::
+
+    [requires]
+    libfixkalman/20161008@sunside/stable
+
+where ``20161008`` would be replaced with the latest version as found via ``conan search -v libfixkalman*` -r=conan.io`. You can then just::
+
+    conan install
+
+or
+
+    conan install --build
+
+to obtain all required references.
+
+.. _`conan.io`: https://conan.io/

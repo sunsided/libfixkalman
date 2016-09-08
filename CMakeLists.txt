@@ -1,34 +1,33 @@
 cmake_minimum_required(VERSION 3.6)
 project(libfixkalman)
 
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_DEBUG_POSTFIX d)
+
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY         ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY         ${CMAKE_CURRENT_BINARY_DIR}/lib)
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 
 set(SOURCE_FILES
+    fixkalman.c)
+
+set(HEADER_FILES
     compiler.h
     settings.h
-    example_gravity.c
-    fixkalman.c
     fixkalman.h)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+set(GRAVITY_EXAMPLE_FILES
+    example_gravity.c)
 
-find_package (libfixmath REQUIRED)
-find_package (libfixmatrix REQUIRED)
+add_library(libfixkalman STATIC ${HEADER_FILES} ${SOURCE_FILES})
+add_executable(gravity_example ${HEADER_FILES} ${GRAVITY_EXAMPLE_FILES})
 
-if (LIBFIXMATH_FOUND)
-    include_directories(${LIBFIXMATH_INCLUDE_DIRS})
-    set(SOURCE_FILES
-            ${SOURCE_FILES}
-            ${LIBFIXMATH_INCLUDE_DIR}/fix16
-            ${LIBFIXMATH_INCLUDE_DIR}/fix16_sqrt)
-endif (LIBFIXMATH_FOUND)
-
-if (LIBFIXMATRIX_FOUND)
-    include_directories(${LIBFIXMATRIX_INCLUDE_DIRS})
-    set(SOURCE_FILES
-            ${SOURCE_FILES}
-            ${LIBFIXMATRIX_INCLUDE_DIR}/fixarray
-            ${LIBFIXMATRIX_INCLUDE_DIR}/fixmatrix)
-endif (LIBFIXMATRIX_FOUND)
-
-add_executable(libfixkalman ${SOURCE_FILES})
+target_link_libraries(libfixkalman ${CONAN_LIBS})
+target_link_libraries(gravity_example ${CONAN_LIBS} libfixkalman)
