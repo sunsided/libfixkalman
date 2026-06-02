@@ -25,27 +25,39 @@ See `function reference`_ for further details and `example_gravity.c`_ for examp
 .. _`example_gravity.c`: https://github.com/sunsided/libfixkalman/blob/master/example_gravity.c
 .. `sunsided/minikalman-rs`: https://github.com/sunsided/minikalman-rs
 
-conan.io
+Building
 --------
 
-This library now has experimental support for the `conan.io`_ package manager and is aimed at CMake. Both ``libfixmath`` and ``libfixmatrix`` dependencies are available on conan.io and you should be able to verify the package building process by calling::
+The library depends on libfixmath_ and libfixmatrix_. These are not published on
+any current package remote, so the CMake build fetches them straight from GitHub
+(pinned commits) via ``FetchContent`` - no package manager required.
 
-    conan test_package --build
+With CMake::
 
-In general, to reference the library you'd provide a ``conanfile.txt`` with the following content::
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --parallel
+    ctest --test-dir build --output-on-failure
 
-    [requires]
-    libfixkalman/20161008@sunside/stable
+Or with go-task_ (see ``Taskfile.dist.yaml``)::
 
-which corresponds to `this package`_, where ``20161008`` could be replaced with the latest version as found via ``conan search -v libfixkalman* -r=conan.io``. You can then just::
+    task build      # configure + compile
+    task example    # run the gravity example
+    task test       # run the ctest suite
 
-    conan install
+Compile-time options (pass as ``-D<option>=ON``, or via ``task build -- -D...``):
 
-or::
+============================  =========================================================
+Option                        Effect
+============================  =========================================================
+``FIXMATRIX_MAX_SIZE`` (=8)   Max matrix dimension; >= #states / #inputs / #measurements
+``KALMAN_JOSEPH_FORM``        Joseph-form covariance update
+``KALMAN_TIME_VARYING``       Covariance prediction uses ``B*Q*B'``
+``KALMAN_DISABLE_C``          Drop functions for systems with control inputs
+``KALMAN_DISABLE_UC``         Drop functions for systems without control inputs
+``KALMAN_DISABLE_LAMBDA``     Drop certainty (lambda) tuning
+============================  =========================================================
 
-    conan install --build
+Continuous integration builds and runs the example across these configurations;
+see ``.github/workflows/ci.yml``.
 
-to obtain all required references.
-
-.. _`conan.io`: https://conan.io/
-.. _`this package`: https://conan.io/source/libfixkalman/20161008/sunside/stable
+.. _go-task: https://taskfile.dev/

@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          # Exercise the meaningful compile-time configurations. The Joseph
+          # configs cover the first-call covariance fix; the disable-* configs
+          # guard the macro combinations called out in the code review.
+          - name: default
+            flags: ""
+          - name: joseph
+            flags: "-DKALMAN_JOSEPH_FORM=ON"
+          - name: time-varying
+            flags: "-DKALMAN_TIME_VARYING=ON"
+          - name: joseph-time-varying
+            flags: "-DKALMAN_JOSEPH_FORM=ON -DKALMAN_TIME_VARYING=ON"
+          - name: no-lambda
+            flags: "-DKALMAN_DISABLE_LAMBDA=ON"
+          - name: uc-only
+            flags: "-DKALMAN_DISABLE_C=ON"
+          - name: c-only-lib
+            flags: "-DKALMAN_DISABLE_UC=ON -DKALMAN_BUILD_EXAMPLES=OFF"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.flags }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test (build + run examples)
+        run: ctest --test-dir build --output-on-failure --no-tests=ignore

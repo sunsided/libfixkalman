@@ -1,0 +1,57 @@
+version: '3'
+
+# Task runner for libfixkalman. Dependencies (libfixmath / libfixmatrix) are
+# fetched automatically by CMake's FetchContent on the first `configure`.
+#
+#   task build      # configure + compile
+#   task example    # run the gravity example
+#   task test       # run the ctest suite
+#   task ci          # clean build + tests
+#
+# Pass extra CMake options through CLI_ARGS, e.g.:
+#   task build -- -DKALMAN_JOSEPH_FORM=ON -DFIXMATRIX_MAX_SIZE=16
+
+vars:
+  BUILD_DIR: '{{.BUILD_DIR | default "build"}}'
+  BUILD_TYPE: '{{.BUILD_TYPE | default "Release"}}'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  configure:
+    desc: Configure the CMake build (fetches deps on first run)
+    cmds:
+      - cmake -S . -B {{.BUILD_DIR}} -DCMAKE_BUILD_TYPE={{.BUILD_TYPE}} {{.CLI_ARGS}}
+
+  build:
+    desc: Build the library, example and package test
+    deps: [configure]
+    cmds:
+      - cmake --build {{.BUILD_DIR}} --parallel
+
+  example:
+    desc: Build and run the gravity example
+    deps: [build]
+    cmds:
+      - '{{.BUILD_DIR}}/gravity_example'
+
+  test:
+    desc: Build and run the test suite (ctest)
+    deps: [build]
+    cmds:
+      - ctest --test-dir {{.BUILD_DIR}} --output-on-failure --no-tests=ignore
+
+  ci:
+    desc: Clean build + tests (mirrors the CI pipeline)
+    cmds:
+      - task: clean
+      - task: test
+
+  clean:
+    desc: Remove the build directory
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
