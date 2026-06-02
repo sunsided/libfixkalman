@@ -56,5 +56,5 @@ see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 [libfixmath]: http://code.google.com/p/libfixmath/
 [libfixmatrix]: https://github.com/PetteriAimonen/libfixmatrix
 [ejml]: https://code.google.com/p/efficient-java-matrix-library/
-[function-reference]: https://github.com/sunsided/libfixkalman/blob/main/FUNCTIONS.rst
+[function-reference]: FUNCTIONS.md
 [example]: https://github.com/sunsided/libfixkalman/blob/main/example_gravity.c
