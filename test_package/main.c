@@ -4,9 +4,8 @@
 
 #include <assert.h>
 
-#define KALMAN_TIME_VARYING
-#define KALMAN_JOSEPH_FORM
-
+// Compile-time configuration is supplied by the build system (see CMake
+// options) so the library and this consumer compile with the same macros.
 #include "fixkalman.h"
 
 #define KALMAN_NAME gravity
@@ -110,14 +109,14 @@ static fix16_t measurement_error[MEAS_COUNT] = {
     F16(-0.015764),
     F16(0.17869) };
 
-void kalman_gravity_demo()
+int kalman_gravity_demo()
 {
     // initialize the filter
     kalman_gravity_init();
 
     mf16 *x = kalman_get_state_vector_uc(&kf);
     mf16 *z = kalman_get_observation_vector(&kfm);
-    
+
     // filter!
     uint_fast16_t i;
     for (i = 0; i < MEAS_COUNT; ++i)
@@ -136,10 +135,15 @@ void kalman_gravity_demo()
     // fetch estimated g
     const fix16_t g_estimated = x->data[2][0];
     const float value = fix16_to_float(g_estimated);
+
+    // assert() is compiled out under NDEBUG, so validate explicitly and
+    // report failure through the return code instead.
     assert(value > 9.7 && value < 10);
+    return (value > 9.7 && value < 10) ? 0 : 1;
 }
 
-void kalman_gravity_demo_lambda()
+#ifndef KALMAN_DISABLE_LAMBDA
+int kalman_gravity_demo_lambda()
 {
     // initialize the filter
     kalman_gravity_init();
@@ -168,11 +172,27 @@ void kalman_gravity_demo_lambda()
     // fetch estimated g
     const fix16_t g_estimated = x->data[2][0];
     const float value = fix16_to_float(g_estimated);
-    assert(value > 9.7 && value < 10);
-}
 
-void main()
+    // assert() is compiled out under NDEBUG, so validate explicitly and
+    // report failure through the return code instead.
+    assert(value > 9.7 && value < 10);
+    return (value > 9.7 && value < 10) ? 0 : 1;
+}
+#endif // KALMAN_DISABLE_LAMBDA
+
+int main(void)
 {
-    kalman_gravity_demo();
-    kalman_gravity_demo_lambda();
+    if (kalman_gravity_demo() != 0)
+    {
+        return 1;
+    }
+
+#ifndef KALMAN_DISABLE_LAMBDA
+    if (kalman_gravity_demo_lambda() != 0)
+    {
+        return 1;
+    }
+#endif
+
+    return 0;
 }

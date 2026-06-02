@@ -16,9 +16,9 @@
 
 #include <assert.h>
 
-#define KALMAN_TIME_VARYING
-#define KALMAN_JOSEPH_FORM
-
+// Compile-time configuration (KALMAN_JOSEPH_FORM, KALMAN_TIME_VARYING, ...) is
+// supplied by the build system so the library and this consumer stay in sync.
+// See CMakeLists.txt options / settings.h.
 #include "fixkalman.h"
 
 /**
@@ -274,6 +274,7 @@ void kalman_gravity_demo()
 /*!
 * \brief Runs the gravity Kalman filter with lambda tuning.
 */
+#ifndef KALMAN_DISABLE_LAMBDA
 #if USE_UNCONTROLLED
 void kalman_gravity_demo_lambda()
 {
@@ -339,10 +340,14 @@ void kalman_gravity_demo_lambda()
     assert(value > 9.7 && value < 10);
 }
 #endif
+#endif // KALMAN_DISABLE_LAMBDA
 
 
-void main()
+int main(void)
 {
     kalman_gravity_demo();
+#ifndef KALMAN_DISABLE_LAMBDA
     kalman_gravity_demo_lambda();
+#endif
+    return 0;
 }

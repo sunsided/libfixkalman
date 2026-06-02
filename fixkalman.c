@@ -421,9 +421,9 @@ void kalman_predict_x(register kalman16_t *const kf)
     
     // TODO: Implement more efficient matrix/row vector multiply
 
-    if (B->rows > 0)
+    if (B->columns > 0)
     {
-        mf16_mul_add(x, B, u);       // x += B*u
+        mf16_mul_add(x, B, u);       // x += B*u (skip when there are no control inputs)
     }
 }
 
@@ -493,9 +493,6 @@ void kalman_predict_P(register kalman16_t *const kf)
     const mf16 *RESTRICT const B = &kf->B;
     mf16 *RESTRICT const P = &kf->P;
     mf16 *RESTRICT const Q = &kf->Q;
-
-    mf16 P_temp = { P->rows, P->columns };
-    mf16 BQ_temp = { A->rows, B->columns };
 
     /************************************************************************/
     /* Predict next covariance using system dynamics and input              */
@@ -579,22 +576,20 @@ void kalman_cpredict_P_uc(register kalman16_uc_t *const kf, register fix16_t del
 * \brief Performs the time update / prediction step of only the state covariance matrix
 * \param[in] kf The Kalman Filter structure to predict with.
 */
+HOT NONNULL
 void kalman_predict_P_tuned(register kalman16_t *const kf, fix16_t lambda)
 {
     // matrices and vectors
     const mf16 *RESTRICT const A = &kf->A;
     const mf16 *RESTRICT const B = &kf->B;
     mf16 *RESTRICT const P = &kf->P;
-    
-    mf16 P_temp = { P->rows, P->columns };
-    mf16 BQ_temp = { A->rows, B->columns };
 
     /************************************************************************/
     /* Calculate lambda                                                     */
     /************************************************************************/
 
-    static fix16_t last_lambda = 1;
-    static fix16_t inv_lambda_cached = 1;
+    static fix16_t last_lambda = F16(1);
+    static fix16_t inv_lambda_cached = F16(1);
 
     register fix16_t inv_lambda = inv_lambda_cached;
     if (lambda != last_lambda)
@@ -745,6 +740,7 @@ void kalman_correct(kalman16_t *kf, kalman16_observation_t *kfm)
     /* P = (I-K*H)*P*(I-K*H)' + K*R*K'                                      */
     /************************************************************************/
 
+    temp_HP.rows = temp_HP.columns = H->columns; // dimension (#states x #states) before filling
     mf16_fill(&temp_HP, F16(0));                // temp_HP reset
     mf16_fill_diagonal(&temp_HP, fix16_one);    // temp_HP to I (identity matrix)
     mf16_mul_sub(&temp_HP, &K, H);              // temp_HP = (I-K*H)
